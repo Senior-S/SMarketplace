@@ -4,6 +4,8 @@ Allow players to sell items between them!
 The plugin requires a MySQL database and a workshop UI.<br>
 [Link to the workshop UI](https://steamcommunity.com/sharedfiles/filedetails/?id=3199423243)
 
+[Plugin preview](https://youtu.be/MunakfiNmSk)
+
 ## Commands
 `/Marketplace` - Permission: 'ss.command.Marketplace'
 
