@@ -44,7 +44,7 @@ public class Market_Session : MonoBehaviour
 
         player.enablePluginWidgetFlag(EPluginWidgetFlags.Modal);
         player.enablePluginWidgetFlag(EPluginWidgetFlags.NoBlur);
-        EffectManager.sendUIEffect(Instance.Configuration.Instance.uiEffectID, keyID, true);
+        EffectManager.sendUIEffect(Instance.Configuration.Instance.uiEffectID, keyID, player.channel.owner.transportConnection, true);
         ChangeTab(ETab.Store);
     }
 
