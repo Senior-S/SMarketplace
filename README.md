@@ -13,17 +13,18 @@ The plugin requires a MySQL database and a workshop UI.<br>
 
 ### Configuration
 ```xml
-<hexDefaultMessagesColor>#2BC415</hexDefaultMessagesColor>
-<uiEffectID>51300</uiEffectID>
-<uiEffectKey>31300</uiEffectKey>
-<useUconomy>true</useUconomy>
-<iconsCDN>https://cdn.lyhme.gg/items/{0}.png</iconsCDN>
-<blacklistedItems>
-  <ItemID>519</ItemID>
-</blacklistedItems>
-<dbServer>127.0.0.1</dbServer>
-<dbPort>3066</dbPort>
-<dbUser>root</dbUser>
-<dbPassword>toor</dbPassword>
-<dbDatabase>unturned</dbDatabase>
+  <hexDefaultMessagesColor>#2BC415</hexDefaultMessagesColor>
+  <requiredItemToMarketplace>0</requiredItemToMarketplace>
+  <uiEffectID>51300</uiEffectID>
+  <uiEffectKey>31300</uiEffectKey>
+  <useUconomy>true</useUconomy>
+  <iconsCDN>https://cdn.lyhme.gg/items/{0}.png</iconsCDN>
+  <blacklistedItems>
+    <ItemID>519</ItemID>
+  </blacklistedItems>
+  <dbServer>127.0.0.1</dbServer>
+  <dbPort>3306</dbPort>
+  <dbUser>root</dbUser>
+  <dbPassword>toor</dbPassword>
+  <dbDatabase>unturned</dbDatabase>
 ```
