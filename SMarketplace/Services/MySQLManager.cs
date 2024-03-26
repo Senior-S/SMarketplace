@@ -97,13 +97,13 @@ public class MySQLManager : IDisposable
         while(await reader.ReadAsync())
         {
             int id = reader.GetInt32(0);
-            ushort itemID = (ushort)reader.GetInt16(1);
+            ushort itemID = ushort.Parse(reader["ItemID"].ToString());
             string itemName = reader.GetString(2);
             int itemPrice = reader.GetInt32(3);
             byte amount = reader.GetByte(4);
             byte durability = reader.GetByte(5);
             string stateBase64 = reader.GetString(6);
-            ulong sellerID = (ulong)reader.GetInt64(7);
+            ulong sellerID = ulong.Parse(reader["SellerID"].ToString());
 
             MarketplaceItem item = new (id, itemID, itemName, itemPrice, sellerID, amount, durability, stateBase64);
             marketplaceItems.Add(item);
