@@ -1,6 +1,7 @@
 ﻿using Rocket.API.Collections;
 using Rocket.Core.Plugins;
 using Rocket.Core.Utils;
+using Rocket.Unturned.Player;
 using SDG.Unturned;
 using SeniorS.SMarketplace.Helpers;
 using SeniorS.SMarketplace.Models;
@@ -51,7 +52,9 @@ public class SMarketplace : RocketPlugin<Configuration>
             {
                 TaskDispatcher.QueueOnMainThread(() =>
                 {
+                    UnturnedPlayer user = UnturnedPlayer.FromSteamPlayer(player);
                     marketplaceService.UpdatePlayerBalance(player.player, pendingPaid);
+                    _msgHelper.Say(user, "success_pending_paid", false, pendingPaid);
                 });
             }
         });
@@ -68,9 +71,11 @@ public class SMarketplace : RocketPlugin<Configuration>
         { "error_item", "An item with name {0} wasn't found in your inventory!" },
         { "error_blacklist", "Sorry! This item can't be listed on the marketplace!" },
         { "error_list", "An error has occurred while listing your item, try again later!" },
+        { "error_required_item", "Sorry! You need a {0} to open the marketplace!" },
         { "info_item", "Your item is being listed, wait a moment please!" },
         { "success_item", "Your {0} is now being sold at the marketplace!" },
-        { "success_buy", "You have successfully bought a {0} from the marketplace!" }
+        { "success_buy", "You have successfully bought a {0} from the marketplace!" },
+        { "success_pending_paid", "You have made ${0} while you were offline!" }
     };
 
     protected override void Unload()

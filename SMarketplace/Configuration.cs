@@ -9,6 +9,8 @@ public class Configuration : IRocketPluginConfiguration
     {
         hexDefaultMessagesColor = "#2BC415";
 
+        requiredItemToMarketplace = 0;
+
         uiEffectID = 51300;
         uiEffectKey = 31300;
 
@@ -28,6 +30,8 @@ public class Configuration : IRocketPluginConfiguration
     }
 
     public string hexDefaultMessagesColor;
+
+    public ushort requiredItemToMarketplace = 0;
 
     public ushort uiEffectID;
     public short uiEffectKey;

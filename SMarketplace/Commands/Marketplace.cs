@@ -1,6 +1,7 @@
 ﻿using Rocket.API;
 using Rocket.Unturned.Chat;
 using Rocket.Unturned.Player;
+using SDG.Unturned;
 using SeniorS.SMarketplace.Sessions;
 using System.Collections.Generic;
 using UnityEngine;
@@ -30,6 +31,27 @@ public class Marketplace : IRocketCommand
         }
 
         UnturnedPlayer user = (UnturnedPlayer)caller;
+        SMarketplace Instance = SMarketplace.Instance;
+
+        if(Instance.Configuration.Instance.requiredItemToMarketplace != 0)
+        {
+            if(user.Player.equipment.itemID == Instance.Configuration.Instance.requiredItemToMarketplace)
+            {
+                Market_Session sessionRequired = user.Player.gameObject.AddComponent<Market_Session>();
+                sessionRequired.Init(user.Player);
+                return;
+            }
+
+            Asset asset = Assets.find(EAssetType.ITEM, Instance.Configuration.Instance.requiredItemToMarketplace);
+            if(asset != null && asset is ItemAsset itemAsset)
+            {
+                Instance._msgHelper.Say(user, "error_required_item", true, itemAsset.FriendlyName);
+                return;
+            }
+
+            Instance._msgHelper.Say(user, "error_required_item", true, "???");
+            return;
+        }
 
         Market_Session session = user.Player.gameObject.AddComponent<Market_Session>();
         session.Init(user.Player);
