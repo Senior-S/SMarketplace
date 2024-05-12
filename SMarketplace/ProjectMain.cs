@@ -47,9 +47,9 @@ public class SMarketplace : RocketPlugin<Configuration>
         Task.Run(async () =>
         {
             int pendingPaid = await dbManager.GetPendingPaids(player.playerID.steamID.m_SteamID);
-            dbManager.Dispose();
             if(pendingPaid > 0)
             {
+                await dbManager.UpdatePendingPaids(player.playerID.steamID.m_SteamID);
                 TaskDispatcher.QueueOnMainThread(() =>
                 {
                     UnturnedPlayer user = UnturnedPlayer.FromSteamPlayer(player);
@@ -57,6 +57,7 @@ public class SMarketplace : RocketPlugin<Configuration>
                     _msgHelper.Say(user, "success_pending_paid", false, pendingPaid);
                 });
             }
+            dbManager.Dispose();
         });
     }
 
@@ -66,6 +67,12 @@ public class SMarketplace : RocketPlugin<Configuration>
         { "ui_error_item", "Sorry, this item isn't available on the market anymore!" },
         { "ui_error_delist", "There was an error while delisted this item, please try again!" },
         { "ui_message_delist", "Your {0} have been successfully delisted!" },
+        { "ui_id_title", "Item ID:" },
+        { "ui_name_title", "Item Name:" },
+        { "ui_price_title", "Item Price:" },
+        { "ui_durability_title", "Item Durability:" },
+        { "ui_amount_title", "Item Amount:" },
+        { "ui_search_placeholder", "Enter item name..." },
         { "error_price", "The price must be greater than 0!" },
         { "error_equipment", "You need to have the item you wanna sell on hand!" },
         { "error_item", "An item with name {0} wasn't found in your inventory!" },

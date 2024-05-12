@@ -46,6 +46,12 @@ public class Market_Session : MonoBehaviour
         player.enablePluginWidgetFlag(EPluginWidgetFlags.NoBlur);
         EffectManager.sendUIEffect(Instance.Configuration.Instance.uiEffectID, keyID, player.channel.owner.transportConnection, true);
         ChangeTab(ETab.Store);
+        EffectManager.sendUIEffectText(keyID, player.channel.owner.transportConnection, true, "Canvas/Background/Info_Tab/Base/Content_Background/Container/Child/Item_ID_Title", Instance._msgHelper.FormatMessage("ui_id_title"));
+        EffectManager.sendUIEffectText(keyID, player.channel.owner.transportConnection, true, "Canvas/Background/Info_Tab/Base/Content_Background/Container/Child/Item_Name_Title", Instance._msgHelper.FormatMessage("ui_name_title"));
+        EffectManager.sendUIEffectText(keyID, player.channel.owner.transportConnection, true, "Canvas/Background/Info_Tab/Base/Content_Background/Container/Child/Item_Price_Title", Instance._msgHelper.FormatMessage("ui_price_title"));
+        EffectManager.sendUIEffectText(keyID, player.channel.owner.transportConnection, true, "Canvas/Background/Info_Tab/Base/Content_Background/Container/Child/Item_Durability_Title", Instance._msgHelper.FormatMessage("ui_durability_title"));
+        EffectManager.sendUIEffectText(keyID, player.channel.owner.transportConnection, true, "Canvas/Background/Info_Tab/Base/Content_Background/Container/Child/Item_Amount_Title", Instance._msgHelper.FormatMessage("ui_amount_title"));
+        EffectManager.sendUIEffectText(keyID, player.channel.owner.transportConnection, true, "Canvas/Background/Search_Tab/Search_InputField/Text Area/SearchPlaceholder", Instance._msgHelper.FormatMessage("ui_search_placeholder"));
     }
 
     private void OnEnemyDisconnected(SteamPlayer steamPlayer)
@@ -430,7 +436,7 @@ public class Market_Session : MonoBehaviour
                 int searchPages = (int)Math.Ceiling((decimal)items.Count / 6);
                 searchPages = searchPages == 0 ? 1 : searchPages;
                 EffectManager.sendUIEffectText(this.keyID, connection, true, "SearchPage", $"<b>{searchCurrentPage + 1}</b>/<b>{searchPages}</b>");
-
+                
                 for (int i = 0; i < 6; i++)
                 {
                     if (i < pageItems.Count)
@@ -452,6 +458,7 @@ public class Market_Session : MonoBehaviour
             case ETab.Info:
 
                 EffectManager.sendUIEffectImageURL(keyID, connection, false, "Item_Icon", infoItem.GetIconURL(), false, false);
+
                 EffectManager.sendUIEffectText(keyID, connection, false, "Item_ID", infoItem.ItemID.ToString());
                 EffectManager.sendUIEffectText(keyID, connection, false, "Item_Name", infoItem.ItemName);
                 EffectManager.sendUIEffectText(keyID, connection, false, "Item_Price", infoItem.Price.ToString());

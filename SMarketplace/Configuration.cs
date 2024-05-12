@@ -27,10 +27,10 @@ public class Configuration : IRocketPluginConfiguration
         dbUser = "root";
         dbPassword = "toor";
         dbDatabase = "unturned";
+        dbTablePrefix = "smarketplace_";
     }
 
     public string hexDefaultMessagesColor;
-
     public ushort requiredItemToMarketplace = 0;
 
     public ushort uiEffectID;
@@ -47,4 +47,5 @@ public class Configuration : IRocketPluginConfiguration
     public string dbUser;
     public string dbPassword;
     public string dbDatabase;
+    public string dbTablePrefix = "smarketplace_";
 }

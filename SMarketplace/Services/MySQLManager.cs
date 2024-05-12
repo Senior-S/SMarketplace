@@ -11,12 +11,14 @@ namespace SeniorS.SMarketplace.Services;
 public class MySQLManager : IDisposable
 {
     private MySqlConnection _connection;
+    private string _tablePrefix;
 
     public MySQLManager()
     {
         try
         {
             _connection = new MySqlConnection(SMarketplace.Instance.connectionString);
+            _tablePrefix = SMarketplace.Instance.Configuration.Instance.dbTablePrefix;
             _connection.Open();
         }
         catch (MySqlException ex)
@@ -68,8 +70,8 @@ public class MySQLManager : IDisposable
 
     public void Init()
     {
-        const string sql_table_items = "CREATE TABLE IF NOT EXISTS `smarketplace_Item` (`ID` SERIAL, `ItemID` SMALLINT UNSIGNED NOT NULL, `ItemName` VARCHAR(255) NOT NULL, `ItemPrice` INT NOT NULL, `ItemAmount` TINYINT UNSIGNED NOT NULL, `ItemDurability` TINYINT UNSIGNED NOT NULL, `ItemState` VARCHAR(172) DEFAULT NULL, `SellerID` BIGINT UNSIGNED NOT NULL, PRIMARY KEY (`ID`));";
-        const string sql_table_logs = "CREATE TABLE IF NOT EXISTS `smarketplace_Log` (`ID` SERIAL, `ItemID` SMALLINT UNSIGNED NOT NULL, `ItemName` VARCHAR(255) NOT NULL, `ItemPrice` INT NOT NULL, `SellerID` BIGINT UNSIGNED NOT NULL, `BuyerID` BIGINT UNSIGNED NOT NULL, `Paid` TINYINT(1) NOT NULL, PRIMARY KEY (`ID`));";
+        string sql_table_items = $"CREATE TABLE IF NOT EXISTS `{_tablePrefix}Item` (`ID` SERIAL, `ItemID` SMALLINT UNSIGNED NOT NULL, `ItemName` VARCHAR(255) NOT NULL, `ItemPrice` INT NOT NULL, `ItemAmount` TINYINT UNSIGNED NOT NULL, `ItemDurability` TINYINT UNSIGNED NOT NULL, `ItemState` VARCHAR(172) DEFAULT NULL, `SellerID` BIGINT UNSIGNED NOT NULL, PRIMARY KEY (`ID`));";
+        string sql_table_logs = $"CREATE TABLE IF NOT EXISTS `{_tablePrefix}Log` (`ID` SERIAL, `ItemID` SMALLINT UNSIGNED NOT NULL, `ItemName` VARCHAR(255) NOT NULL, `ItemPrice` INT NOT NULL, `SellerID` BIGINT UNSIGNED NOT NULL, `BuyerID` BIGINT UNSIGNED NOT NULL, `Paid` TINYINT(1) NOT NULL, PRIMARY KEY (`ID`));";
 
         MySqlCommand query_table_items = new(sql_table_items, _connection);
         MySqlCommand query_table_logs = new(sql_table_logs, _connection);
@@ -80,7 +82,7 @@ public class MySQLManager : IDisposable
 
     public async Task<List<MarketplaceItem>> GetItems()
     {
-        const string sql_select = "SELECT * FROM `smarketplace_Item`;";
+        string sql_select = $"SELECT * FROM `{_tablePrefix}Item`;";
 
         List<MarketplaceItem> marketplaceItems = new();
 
@@ -115,7 +117,7 @@ public class MySQLManager : IDisposable
 
     public async Task<int> AddItem(MarketplaceItem item)
     {
-        const string sql_insert = "INSERT INTO `smarketplace_Item` (`ItemID`, `ItemName`, `ItemPrice`, `ItemAmount`, `ItemDurability`, `ItemState`, `SellerID`) VALUES (@id, @name, @price, @amount, @durability, @state, @sellerID); SELECT LAST_INSERT_ID();";
+        string sql_insert = $"INSERT INTO `{_tablePrefix}Item` (`ItemID`, `ItemName`, `ItemPrice`, `ItemAmount`, `ItemDurability`, `ItemState`, `SellerID`) VALUES (@id, @name, @price, @amount, @durability, @state, @sellerID); SELECT LAST_INSERT_ID();";
 
         MySqlCommand query_insert = new(sql_insert, _connection);
         query_insert.Parameters.AddWithValue("@id", item.ItemID);
@@ -133,7 +135,7 @@ public class MySQLManager : IDisposable
 
     public async Task<bool> RemoveItem(int id)
     {
-        const string sql_delete = "DELETE FROM `smarketplace_Item` WHERE `ID` = @id;";
+        string sql_delete = $"DELETE FROM `{_tablePrefix}Item` WHERE `ID` = @id;";
 
         MySqlCommand query_delete = new(sql_delete, _connection);
         query_delete.Parameters.AddWithValue("@id", id);
@@ -145,7 +147,7 @@ public class MySQLManager : IDisposable
 
     public async Task AddLog(MarketplaceItem soldItem, ulong buyerID, bool paid)
     {
-        const string sql_insert = "INSERT INTO `smarketplace_Log` (`ItemID`, `ItemName`, `ItemPrice`, `SellerID`, `BuyerID`, `Paid`) VALUES (@id, @name, @price, @sellerID, @buyerID, @paid);";
+        string sql_insert = $"INSERT INTO `{_tablePrefix}Log` (`ItemID`, `ItemName`, `ItemPrice`, `SellerID`, `BuyerID`, `Paid`) VALUES (@id, @name, @price, @sellerID, @buyerID, @paid);";
 
         MySqlCommand query_insert = new(sql_insert, _connection);
         query_insert.Parameters.AddWithValue("@id", soldItem.ItemID);
@@ -160,7 +162,7 @@ public class MySQLManager : IDisposable
 
     public async Task<int> GetPendingPaids(ulong playerID)
     {
-        const string sql_select = "SELECT `ItemPrice` FROM `smarketplace_Log` WHERE `SellerID` = @playerID AND `Paid` = 0;";
+        string sql_select = $"SELECT `ItemPrice` FROM `{_tablePrefix}Log` WHERE `SellerID` = @playerID AND `Paid` = 0;";
 
         MySqlCommand query_select = new(sql_select, _connection);
         query_select.Parameters.AddWithValue("@playerID", playerID);
@@ -188,7 +190,7 @@ public class MySQLManager : IDisposable
 
     public async Task UpdatePendingPaids(ulong playerID)
     {
-        const string sql_update = "UPDATE `smarketplace_Log` SET `Paid` = 1 WHERE `SellerID` = @playerID;";
+        string sql_update = $"UPDATE `{_tablePrefix}Log` SET `Paid` = 1 WHERE `SellerID` = @playerID;";
 
         MySqlCommand query_update = new(sql_update, _connection);
         query_update.Parameters.AddWithValue("@playerID", playerID);
