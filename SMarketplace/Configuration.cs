@@ -16,6 +16,8 @@ public class Configuration : IRocketPluginConfiguration
 
         useUconomy = true;
         iconsCDN = "https://cdn.lyhme.gg/items/{0}.png";
+        updateCacheMinutes = 0;
+        filterMapItems = false;
 
         blacklistedItems = new()
         {
@@ -38,6 +40,8 @@ public class Configuration : IRocketPluginConfiguration
 
     public bool useUconomy;
     public string iconsCDN;
+    public int updateCacheMinutes = 0;
+    public bool filterMapItems = false;
 
     [XmlArrayItem("ItemID")]
     public List<ushort> blacklistedItems = new();

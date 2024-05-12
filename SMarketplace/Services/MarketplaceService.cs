@@ -7,16 +7,65 @@ using Steamworks;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SeniorS.SMarketplace.Services;
-public class MarketplaceService
+public class MarketplaceService : IDisposable
 {
     public List<MarketplaceItem> marketplaceItems { get; private set; }
 
-    public MarketplaceService(List<MarketplaceItem> items)
+    private readonly Timer _timer;
+    private readonly bool _filterMapItems;
+    
+    public MarketplaceService(int cacheUpdateDelay, bool filterMapItems)
     {
-        this.marketplaceItems = items;
+        _timer = new Timer(CheckExpiredItems, null, TimeSpan.Zero, cacheUpdateDelay > 0 ? TimeSpan.FromMinutes(cacheUpdateDelay) : TimeSpan.FromMinutes(45));
+        _filterMapItems = filterMapItems;
+    }
+
+    private async void CheckExpiredItems(object state)
+    {
+        MySQLManager dbManager = new();
+        dbManager.Init();
+        List<MarketplaceItem> items = await dbManager.GetItems();
+        dbManager.Dispose();
+
+        if (_filterMapItems)
+        {
+            FilterMapItems(items);
+            return;
+        }
+
+        marketplaceItems = items;
+    }
+
+    // Function added for servers running the same database in multiple servers with different maps
+    // This function tries to remove items that don't exists in this server or map
+    private void FilterMapItems(List<MarketplaceItem> items)
+    {
+        MarketplaceItem[] itemsCopy = new MarketplaceItem[items.Count];
+        items.CopyTo(itemsCopy);
+
+        TaskDispatcher.QueueOnMainThread(() =>
+        {
+            List<ushort> existingIds = new();
+            itemsCopy.ToList().ForEach(c =>
+            {
+                if (existingIds.Contains(c.ItemID)) return;
+
+                var asset = Assets.find(EAssetType.ITEM, c.ItemID);
+                if (asset != null && asset.assetCategory != EAssetType.SKIN)
+                {
+                    existingIds.Add(c.ItemID);
+                    return;
+                }
+
+                items.Remove(c);
+            });
+
+            marketplaceItems = items;
+        });
     }
 
     public List<MarketplaceItem> SearchCoincidences(string itemName)
@@ -142,5 +191,11 @@ public class MarketplaceService
         }
 
         player.skills.ServerModifyExperience(amount);
+    }
+
+    public void Dispose()
+    {
+        _timer.Dispose();
+        marketplaceItems.Clear();
     }
 }

@@ -33,7 +33,7 @@ public class Marketplace : IRocketCommand
         UnturnedPlayer user = (UnturnedPlayer)caller;
         SMarketplace Instance = SMarketplace.Instance;
 
-        if(Instance.Configuration.Instance.requiredItemToMarketplace != 0)
+        if (Instance.Configuration.Instance.requiredItemToMarketplace != 0)
         {
             if(user.Player.equipment.itemID == Instance.Configuration.Instance.requiredItemToMarketplace)
             {

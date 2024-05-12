@@ -4,9 +4,7 @@ using Rocket.Core.Utils;
 using Rocket.Unturned.Player;
 using SDG.Unturned;
 using SeniorS.SMarketplace.Helpers;
-using SeniorS.SMarketplace.Models;
 using SeniorS.SMarketplace.Services;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Logger = Rocket.Core.Logging.Logger;
 
@@ -25,20 +23,16 @@ public class SMarketplace : RocketPlugin<Configuration>
         _msgHelper = new();
         connectionString = $"Server={Configuration.Instance.dbServer};Port={Configuration.Instance.dbPort};Database={Configuration.Instance.dbDatabase};Uid={Configuration.Instance.dbUser};Pwd={Configuration.Instance.dbPassword};";
 
-        MySQLManager dbManager = new();
-        dbManager.Init();
-
-        Task.Run(async () =>
-        {
-            List<MarketplaceItem> items = await dbManager.GetItems();
-            dbManager.Dispose();
-            marketplaceService = new(items);
-        });
-
         Provider.onEnemyConnected += OnEnemyConnected;
+        Level.onLevelLoaded += OnLevelLoaded;
 
         Logger.Log($"SMarketplace v{this.Assembly.GetName().Version}");
         Logger.Log("<<SSPlugins>>");
+    }
+
+    private void OnLevelLoaded(int level)
+    {
+        marketplaceService = new(Configuration.Instance.updateCacheMinutes, Configuration.Instance.filterMapItems);
     }
 
     private void OnEnemyConnected(SteamPlayer player)
@@ -89,8 +83,10 @@ public class SMarketplace : RocketPlugin<Configuration>
     {
         Instance = null;
         _msgHelper = null;
+        marketplaceService.Dispose();
 
         Provider.onEnemyConnected -= OnEnemyConnected;
+        Level.onLevelLoaded -= OnLevelLoaded;
 
         Logger.Log("<<SSPlugins>>");
     }
