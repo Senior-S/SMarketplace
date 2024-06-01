@@ -1,6 +1,5 @@
 ﻿using SDG.Unturned;
 using System;
-using System.Management.Instrumentation;
 
 namespace SeniorS.SMarketplace.Models;
 public class MarketplaceItem
@@ -33,18 +32,6 @@ public class MarketplaceItem
         Base64State = base64State;
     }
 
-    //public MarketplaceItem(ushort itemID, string itemName, decimal price, ulong sellerID, byte amount, byte durability, string state)
-    //{
-    //    ID = -1;
-    //    ItemID = itemID;
-    //    ItemName = itemName;
-    //    Price = price;
-    //    SellerID = sellerID;
-    //    Amount = amount;
-    //    Durability = durability;
-    //    Base64State = state;
-    //}
-
     public MarketplaceItem(Item item, int price, ulong sellerID)
     {
         ID = -1;
@@ -58,6 +45,16 @@ public class MarketplaceItem
     }
 
     public byte[] State => Convert.FromBase64String(Base64State);
+
+    public string GetName()
+    {
+        return SMarketplace.Instance._msgHelper.FormatMessage("ui_name_format", this.ItemName, this.ID);
+    }
+
+    public string GetPrice()
+    {
+        return SMarketplace.Instance._msgHelper.FormatMessage("ui_price_format", this.Price);
+    }
 
     public string GetIconURL()
     {

@@ -3,6 +3,7 @@ using Rocket.Unturned.Player;
 using SDG.NetTransport;
 using SDG.Unturned;
 using SeniorS.SMarketplace.Models;
+using Steamworks;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -390,7 +391,7 @@ public class Market_Session : MonoBehaviour
                     if(i < pageItems.Count)
                     {
                         EffectManager.sendUIEffectText(this.keyID, connection, true, $"StoreItem_{i + 1}_Name", pageItems[i].ItemName);
-                        EffectManager.sendUIEffectText(this.keyID, connection, true, $"StoreItem_{i + 1}_Price", $"${pageItems[i].Price}");
+                        EffectManager.sendUIEffectText(this.keyID, connection, true, $"StoreItem_{i + 1}_Price", pageItems[i].GetPrice());
                         EffectManager.sendUIEffectImageURL(this.keyID, connection, true, $"StoreItem_{i + 1}_Icon", pageItems[i].GetIconURL(), false, false);
 
                         EffectManager.sendUIEffectVisibility(this.keyID, connection, true, $"StoreItem_{i + 1}_Buy", pageItems[i].SellerID != player.channel.owner.playerID.steamID.m_SteamID);
@@ -416,7 +417,7 @@ public class Market_Session : MonoBehaviour
                     if(i < inventoryPageItems.Count)
                     {
                         EffectManager.sendUIEffectText(this.keyID, connection, true, $"InventoryItem_{i + 1}_Name", inventoryPageItems[i].ItemName);
-                        EffectManager.sendUIEffectText(this.keyID, connection, true, $"InventoryItem_{i + 1}_Price", $"${inventoryPageItems[i].Price}");
+                        EffectManager.sendUIEffectText(this.keyID, connection, true, $"InventoryItem_{i + 1}_Price", inventoryPageItems[i].GetPrice());
                         EffectManager.sendUIEffectImageURL(this.keyID, connection, true, $"InventoryItem_{i + 1}_Icon", inventoryPageItems[i].GetIconURL(), false, false);
 
                         EffectManager.sendUIEffectVisibility(this.keyID, connection, true, $"InventoryItem_{i + 1}", true);
@@ -442,7 +443,7 @@ public class Market_Session : MonoBehaviour
                     if (i < pageItems.Count)
                     {
                         EffectManager.sendUIEffectText(this.keyID, connection, true, $"SearchItem_{i + 1}_Name", pageItems[i].ItemName);
-                        EffectManager.sendUIEffectText(this.keyID, connection, true, $"SearchItem_{i + 1}_Price", $"${pageItems[i].Price}");
+                        EffectManager.sendUIEffectText(this.keyID, connection, true, $"SearchItem_{i + 1}_Price", pageItems[i].GetPrice());
                         EffectManager.sendUIEffectImageURL(this.keyID, connection, true, $"SearchItem_{i + 1}_Icon", pageItems[i].GetIconURL(), false, false);
 
                         EffectManager.sendUIEffectVisibility(this.keyID, connection, true, $"SearchItem_{i + 1}_Buy", pageItems[i].SellerID != player.channel.owner.playerID.steamID.m_SteamID);
@@ -457,13 +458,33 @@ public class Market_Session : MonoBehaviour
                 break;
             case ETab.Info:
 
-                EffectManager.sendUIEffectImageURL(keyID, connection, false, "Item_Icon", infoItem.GetIconURL(), false, false);
+                EffectManager.sendUIEffectImageURL(keyID, connection, false, "Canvas/Background/Info_Tab/Base/GeneralInfo/Item_Background/Item_Icon", infoItem.GetIconURL(), false, false);
 
-                EffectManager.sendUIEffectText(keyID, connection, false, "Item_ID", infoItem.ItemID.ToString());
-                EffectManager.sendUIEffectText(keyID, connection, false, "Item_Name", infoItem.ItemName);
-                EffectManager.sendUIEffectText(keyID, connection, false, "Item_Price", infoItem.Price.ToString());
-                EffectManager.sendUIEffectText(keyID, connection, false, "Item_Durability", infoItem.Durability.ToString());
-                EffectManager.sendUIEffectText(keyID, connection, false, "Item_Amount", infoItem.Amount.ToString());
+                EffectManager.sendUIEffectText(keyID, connection, false, "Canvas/Background/Info_Tab/Base/GeneralInfo/Content_Background/Container/Child/Item_Name", infoItem.GetName());
+                EffectManager.sendUIEffectText(keyID, connection, false, "Canvas/Background/Info_Tab/Base/GeneralInfo/Content_Background/Container/Child/Item_Price", infoItem.GetPrice());
+                EffectManager.sendUIEffectText(keyID, connection, false, "Canvas/Background/Info_Tab/Base/GeneralInfo/Content_Background/Container/Child/Item_Durability", infoItem.Durability.ToString());
+                EffectManager.sendUIEffectText(keyID, connection, false, "Canvas/Background/Info_Tab/Base/GeneralInfo/Content_Background/Container/Child/Item_Amount", infoItem.Amount.ToString());
+
+                bool shouldDisplayAttachments = Instance.Configuration.Instance.displayAttachments && IsGun(infoItem.ItemID);
+
+                EffectManager.sendUIEffectVisibility(keyID, connection, true, "Canvas/Background/Info_Tab/Base/Attachments", shouldDisplayAttachments);
+
+                if (shouldDisplayAttachments)
+                {
+                    byte[] itemState = infoItem.State;
+
+                    ushort sight = BitConverter.ToUInt16(itemState, 0);
+                    ushort tactical = BitConverter.ToUInt16(itemState, 2);
+                    ushort grip = BitConverter.ToUInt16(itemState, 4);
+                    ushort barrel = BitConverter.ToUInt16(itemState, 6);
+
+                    EffectManager.sendUIEffectVisibility(keyID, connection, true, "Canvas/Background/Info_Tab/Base/Attachments", true);
+
+                    DisplayAttachmentInfo(EAttachmentType.Sight, sight);
+                    DisplayAttachmentInfo(EAttachmentType.Tactical, tactical);
+                    DisplayAttachmentInfo(EAttachmentType.Grip, grip);
+                    DisplayAttachmentInfo(EAttachmentType.Barrel, barrel);
+                }
 
                 EffectManager.sendUIEffectVisibility(keyID, connection, false, "Info_Tab_Buy", infoItem.SellerID != player.channel.owner.playerID.steamID.m_SteamID);
 
@@ -477,6 +498,74 @@ public class Market_Session : MonoBehaviour
 
         EffectManager.sendUIEffectVisibility(keyID, connection, false, "Loading_Tab", false);
         UpdateUI();
+    }
+
+    private bool IsGun(ushort itemID)
+    {
+        return Assets.find(EAssetType.ITEM, itemID) is ItemGunAsset;
+    }
+
+    private void DisplayAttachmentInfo(EAttachmentType attachmentType, ushort attachmentID)
+    {
+        ITransportConnection connection = player.channel.owner.transportConnection;
+        string attachmentName = attachmentType.ToString();
+        EffectManager.sendUIEffectVisibility(keyID, connection, false, $"Canvas/Background/Info_Tab/Base/Attachments/{attachmentName}", attachmentID != 0);
+        if (attachmentID == 0)
+        {
+            return;
+        }
+        Asset attachmentAsset = Assets.find(EAssetType.ITEM, attachmentID);
+
+        string iconUrl = Instance.Configuration.Instance.iconsCDN.Replace("{0}", attachmentID.ToString()) ;
+
+        switch (attachmentType)
+        {
+            case EAttachmentType.Sight:
+                if(attachmentAsset is not ItemSightAsset sightAsset)
+                {
+                    EffectManager.sendUIEffectText(keyID, connection, false, "Canvas/Background/Info_Tab/Base/Attachments/Sight/Sight_Name", "Unknown");
+                    break;
+                }
+
+                EffectManager.sendUIEffectImageURL(keyID, connection, false, "Canvas/Background/Info_Tab/Base/Attachments/Sight/Icon", iconUrl, true, true);
+                EffectManager.sendUIEffectText(keyID, connection, false, "Canvas/Background/Info_Tab/Base/Attachments/Sight/Sight_Name", sightAsset.FriendlyName);
+
+                break;
+            case EAttachmentType.Barrel:
+                if (attachmentAsset is not ItemBarrelAsset barrelAsset)
+                {
+                    EffectManager.sendUIEffectText(keyID, connection, false, "Canvas/Background/Info_Tab/Base/Attachments/Barrel/Barrel_Name", "Unknown");
+                    break;
+                }
+
+                EffectManager.sendUIEffectImageURL(keyID, connection, false, "Canvas/Background/Info_Tab/Base/Attachments/Barrel/Icon", iconUrl, true, true);
+                EffectManager.sendUIEffectText(keyID, connection, false, "Canvas/Background/Info_Tab/Base/Attachments/Barrel/Barrel_Name", barrelAsset.FriendlyName);
+
+                break;
+            case EAttachmentType.Grip:
+                if (attachmentAsset is not ItemGripAsset gripAsset)
+                {
+                    EffectManager.sendUIEffectText(keyID, connection, false, "Canvas/Background/Info_Tab/Base/Attachments/Grip/Grip_Name", "Unknown");
+                    break;
+                }
+
+                EffectManager.sendUIEffectImageURL(keyID, connection, false, "Canvas/Background/Info_Tab/Base/Attachments/Grip/Icon", iconUrl, true, true);
+                EffectManager.sendUIEffectText(keyID, connection, false, "Canvas/Background/Info_Tab/Base/Attachments/Grip/Grip_Name", gripAsset.FriendlyName);
+
+                break;
+            case EAttachmentType.Tactical:
+                if (attachmentAsset is not ItemTacticalAsset tacticalAsset)
+                {
+                    EffectManager.sendUIEffectText(keyID, connection, false, "Canvas/Background/Info_Tab/Base/Attachments/Tactical/Tactical_Name", "Unknown");
+                    break;
+                }
+
+                EffectManager.sendUIEffectImageURL(keyID, connection, false, "Canvas/Background/Info_Tab/Base/Attachments/Tactical/Icon", iconUrl, true, true);
+                EffectManager.sendUIEffectText(keyID, connection, false, "Canvas/Background/Info_Tab/Base/Attachments/Tactical/Tactical_Name", tacticalAsset.FriendlyName);
+
+                break;
+        }
+
     }
 
     private void Close()
@@ -503,11 +592,9 @@ public class Market_Session : MonoBehaviour
         EffectManager.sendUIEffectVisibility(keyID, connection, true, "Search_Selected", currentTab == ETab.Search);
         EffectManager.sendUIEffectVisibility(keyID, connection, true, "Close_Selected", currentTab == ETab.Close);
 
-        EffectManager.sendUIEffectVisibility(keyID, connection, true, "Info_Tab", false);
-
-        EffectManager.sendUIEffectVisibility(keyID, connection, true, "Store_Tab", currentTab == ETab.Store);
-        EffectManager.sendUIEffectVisibility(keyID, connection, true, "Inventory_Tab", currentTab == ETab.Inventory);
-        EffectManager.sendUIEffectVisibility(keyID, connection, true, "Search_Tab", currentTab == ETab.Search);
-        EffectManager.sendUIEffectVisibility(keyID, connection, true, "Info_Tab", currentTab == ETab.Info);
+        EffectManager.sendUIEffectVisibility(keyID, connection, true, "Canvas/Background/Store_Tab", currentTab == ETab.Store);
+        EffectManager.sendUIEffectVisibility(keyID, connection, true, "Canvas/Background/Inventory_Tab", currentTab == ETab.Inventory);
+        EffectManager.sendUIEffectVisibility(keyID, connection, true, "Canvas/Background/Search_Tab", currentTab == ETab.Search);
+        EffectManager.sendUIEffectVisibility(keyID, connection, true, "Canvas/Background/Info_Tab", currentTab == ETab.Info);
     }
 }

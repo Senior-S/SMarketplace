@@ -2216,6 +2216,11 @@
             Export JSON report of Unturned's assets for economy usage.
             </summary>
         </member>
+        <member name="F:SDG.Unturned.EconAssetsReport.Item.HasEffectTransform">
+            <summary>
+            If true, contains child transform named Effect for mythical attachment. 
+            </summary>
+        </member>
         <member name="F:SDG.Unturned.EconAssetsReport.Skin.SecondaryItemIDs">
             <summary>
             Attachment item IDs that get skinned specially.
@@ -7075,6 +7080,12 @@
             Relatively efficiently find mesh components, and log an error if their mesh is missing, among other checks.
             </summary>
         </member>
+        <member name="M:SDG.Unturned.AssetValidation.InternalValidateRendererMultiLodRegistration(SDG.Unturned.Asset)">
+            <summary>
+            Unity warns about renderers registered with more than one LOD group, so we do our own validation as part of
+            asset loading to make it easier to find these.
+            </summary>
+        </member>
         <member name="F:SDG.Unturned.ESteamCall.SERVER">
             <summary>
             Replaced by ServerMethodHandle.
@@ -10594,6 +10605,11 @@
             Icon saved for community members in Extras folder.
             </summary>
         </member>
+        <member name="F:SDG.Unturned.ItemDefIconInfo.hasSmall">
+            <summary>
+            Has the small icon been captured yet?
+            </summary>
+        </member>
         <member name="F:SDG.Unturned.ItemDefIconInfo.hasLarge">
             <summary>
             Has the large icon been captured yet?
@@ -13267,6 +13283,11 @@
         <member name="T:SDG.Unturned.ItemStoreSavedata">
             <summary>
             Tracks whether we should show the "NEW" label on listings and item store button.
+            </summary>
+        </member>
+        <member name="M:SDG.Unturned.ItemStoreSavedata.MarkNewCraftingPageSeen">
+            <summary>
+            Track that player has seen the new crafting blueprints.
             </summary>
         </member>
         <member name="M:SDG.Unturned.ItemStoreSavedata.MarkNewListingsPageSeen">

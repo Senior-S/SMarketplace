@@ -333,6 +333,7 @@
     <Compile Include="Commands\ListItem.cs" />
     <Compile Include="Commands\Marketplace.cs" />
     <Compile Include="Configuration.cs" />
+    <Compile Include="Models\EAttachmentType.cs" />
     <Compile Include="Models\EError.cs" />
     <Compile Include="Models\ENotification.cs" />
     <Compile Include="Models\ETab.cs" />

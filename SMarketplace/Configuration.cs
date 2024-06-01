@@ -15,6 +15,7 @@ public class Configuration : IRocketPluginConfiguration
         uiEffectKey = 31300;
 
         useUconomy = true;
+        displayAttachments = false;
         iconsCDN = "https://cdn.lyhme.gg/items/{0}.png";
         updateCacheMinutes = 0;
         filterMapItems = false;
@@ -39,6 +40,7 @@ public class Configuration : IRocketPluginConfiguration
     public short uiEffectKey;
 
     public bool useUconomy;
+    public bool displayAttachments = false; // Attachments will be optional due some servers may experience some ping when searching the attachments info.
     public string iconsCDN;
     public int updateCacheMinutes = 0;
     public bool filterMapItems = false;
