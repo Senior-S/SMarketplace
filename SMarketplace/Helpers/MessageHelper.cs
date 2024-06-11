@@ -43,7 +43,7 @@ public class MessageHelper
         player.ServerShowHint(finalMessage, 8f);
     }
 
-    private Color HexToColor(string hex)
+    public Color HexToColor(string hex)
     {
         if (!ColorUtility.TryParseHtmlString(hex, out Color color))
         {

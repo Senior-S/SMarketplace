@@ -14,31 +14,35 @@ public class MarketplaceItem
 
     public ulong SellerID { get; set; }
 
+    public string SellerName { get; set; }
+
     public byte Amount { get; set; }
 
     public byte Durability { get; set; }
 
     public string Base64State { get; set; }
 
-    public MarketplaceItem(int id, ushort itemID, string itemName, int price, ulong sellerID, byte amount, byte durability, string base64State)
+    public MarketplaceItem(int id, ushort itemID, string itemName, int price, ulong sellerID, string sellerName, byte amount, byte durability, string base64State)
     {
         ID = id;
         ItemID = itemID;
         ItemName = itemName;
         Price = price;
         SellerID = sellerID;
+        SellerName = sellerName;
         Amount = amount;
         Durability = durability;
         Base64State = base64State;
     }
 
-    public MarketplaceItem(Item item, int price, ulong sellerID)
+    public MarketplaceItem(Item item, int price, ulong sellerID, string sellerName)
     {
         ID = -1;
         ItemID = item.id;
         ItemName = item.GetAsset().FriendlyName;
         Price = price;
         SellerID = sellerID;
+        SellerName = sellerName;
         Amount = item.amount;
         Durability = item.durability;
         Base64State = Convert.ToBase64String(item.state);
@@ -46,9 +50,14 @@ public class MarketplaceItem
 
     public byte[] State => Convert.FromBase64String(Base64State);
 
-    public string GetName()
+    public string GetInfoName()
     {
         return SMarketplace.Instance._msgHelper.FormatMessage("ui_name_format", this.ItemName, this.ID);
+    }
+
+    public string GetSeller()
+    {
+        return SMarketplace.Instance._msgHelper.FormatMessage("ui_seller_format", this.SellerName);
     }
 
     public string GetPrice()

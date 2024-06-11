@@ -5,6 +5,7 @@ using SeniorS.SMarketplace.Models;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace SeniorS.SMarketplace.Services;
@@ -70,14 +71,51 @@ public class MySQLManager : IDisposable
 
     public void Init()
     {
-        string sql_table_items = $"CREATE TABLE IF NOT EXISTS `{_tablePrefix}Item` (`ID` SERIAL, `ItemID` SMALLINT UNSIGNED NOT NULL, `ItemName` VARCHAR(255) NOT NULL, `ItemPrice` INT NOT NULL, `ItemAmount` TINYINT UNSIGNED NOT NULL, `ItemDurability` TINYINT UNSIGNED NOT NULL, `ItemState` VARCHAR(172) DEFAULT NULL, `SellerID` BIGINT UNSIGNED NOT NULL, PRIMARY KEY (`ID`));";
-        string sql_table_logs = $"CREATE TABLE IF NOT EXISTS `{_tablePrefix}Log` (`ID` SERIAL, `ItemID` SMALLINT UNSIGNED NOT NULL, `ItemName` VARCHAR(255) NOT NULL, `ItemPrice` INT NOT NULL, `SellerID` BIGINT UNSIGNED NOT NULL, `BuyerID` BIGINT UNSIGNED NOT NULL, `Paid` TINYINT(1) NOT NULL, PRIMARY KEY (`ID`));";
+        string sql_table_items = $"CREATE TABLE IF NOT EXISTS `{_tablePrefix}Item` (`ID` SERIAL, `ItemID` SMALLINT UNSIGNED NOT NULL, `ItemName` VARCHAR(255) NOT NULL, `ItemPrice` INT NOT NULL, `ItemAmount` TINYINT UNSIGNED NOT NULL, `ItemDurability` TINYINT UNSIGNED NOT NULL, `ItemState` VARCHAR(172) DEFAULT NULL, `SellerID` BIGINT UNSIGNED NOT NULL, `SellerName` VARCHAR(255) NOT NULL, PRIMARY KEY (`ID`));";
+        string sql_table_logs = $"CREATE TABLE IF NOT EXISTS `{_tablePrefix}Log` (`ID` SERIAL, `ItemID` SMALLINT UNSIGNED NOT NULL, `ItemName` VARCHAR(255) NOT NULL, `ItemPrice` INT NOT NULL, `SellerID` BIGINT UNSIGNED NOT NULL, `SellerName` VARCHAR(255) NOT NULL, `BuyerID` BIGINT UNSIGNED NOT NULL, `BuyerName` VARCHAR(255) NOT NULL, `Paid` TINYINT(1) NOT NULL, PRIMARY KEY (`ID`));";
 
         MySqlCommand query_table_items = new(sql_table_items, _connection);
         MySqlCommand query_table_logs = new(sql_table_logs, _connection);
 
         query_table_items.ExecuteNonQuery();
         query_table_logs.ExecuteNonQuery();
+
+        string sql_alter_items = $"ALTER TABLE `{_tablePrefix}Item` ADD COLUMN `SellerName` VARCHAR(255) NOT NULL AFTER `SellerID`;";
+        string sql_alter_logs_seller = $"ALTER TABLE `{_tablePrefix}Log` ADD COLUMN `SellerName` VARCHAR(255) NOT NULL AFTER `SellerID`;";
+        string sql_alter_logs_buyer = $"ALTER TABLE `{_tablePrefix}Log` ADD COLUMN `BuyerName` VARCHAR(255) NOT NULL AFTER `BuyerID`;";
+
+        MySqlCommand query_alter_items = new(sql_alter_items, _connection);
+        MySqlCommand query_alter_logs_seller = new(sql_alter_logs_seller, _connection);
+        MySqlCommand query_alter_logs_buyer = new(sql_alter_logs_buyer, _connection);
+
+        try
+        {
+            query_alter_items.ExecuteNonQuery();
+            query_alter_logs_seller.ExecuteNonQuery();
+            query_alter_logs_buyer.ExecuteNonQuery();
+        }
+        catch (MySqlException ex)
+        {
+            if(ex.Number == 1060)
+            {
+                // The table was already altered so ignore the issue.
+                // TODO: Remove this for update 2.0.0 due everyone should already have the updated table for when that version comes out.
+                return;
+            }
+            TaskDispatcher.QueueOnMainThread(() =>
+            {
+                Logger.LogException(ex, "Unexpected MySQL error!");
+            });
+            throw new Exception("Error loading MySQL service");
+        }
+        catch (Exception ex)
+        {
+            TaskDispatcher.QueueOnMainThread(() =>
+            {
+                Logger.LogException(ex, "Unexpected error!");
+            });
+            throw new Exception("Error loading MySQL service");
+        }
     }
 
     public async Task<List<MarketplaceItem>> GetItems()
@@ -106,8 +144,9 @@ public class MySQLManager : IDisposable
             byte durability = reader.GetByte(5);
             string stateBase64 = reader.GetString(6);
             ulong sellerID = ulong.Parse(reader["SellerID"].ToString());
+            string sellerName = reader.GetString(8);
 
-            MarketplaceItem item = new (id, itemID, itemName, itemPrice, sellerID, amount, durability, stateBase64);
+            MarketplaceItem item = new (id, itemID, itemName, itemPrice, sellerID, sellerName.Length < 1 ? sellerID.ToString() : sellerName, amount, durability, stateBase64);
             marketplaceItems.Add(item);
         }
 
@@ -117,7 +156,7 @@ public class MySQLManager : IDisposable
 
     public async Task<int> AddItem(MarketplaceItem item)
     {
-        string sql_insert = $"INSERT INTO `{_tablePrefix}Item` (`ItemID`, `ItemName`, `ItemPrice`, `ItemAmount`, `ItemDurability`, `ItemState`, `SellerID`) VALUES (@id, @name, @price, @amount, @durability, @state, @sellerID); SELECT LAST_INSERT_ID();";
+        string sql_insert = $"INSERT INTO `{_tablePrefix}Item` (`ItemID`, `ItemName`, `ItemPrice`, `ItemAmount`, `ItemDurability`, `ItemState`, `SellerID`, `SellerName`) VALUES (@id, @name, @price, @amount, @durability, @state, @sellerID, @sellerName); SELECT LAST_INSERT_ID();";
 
         MySqlCommand query_insert = new(sql_insert, _connection);
         query_insert.Parameters.AddWithValue("@id", item.ItemID);
@@ -127,6 +166,7 @@ public class MySQLManager : IDisposable
         query_insert.Parameters.AddWithValue("@durability", item.Durability);
         query_insert.Parameters.AddWithValue("@state", item.Base64State);
         query_insert.Parameters.AddWithValue("@sellerID", item.SellerID);
+        query_insert.Parameters.AddWithValue("@sellerName", item.SellerName);
 
         int insertedID = Convert.ToInt32(await query_insert.ExecuteScalarAsync());
 
@@ -145,6 +185,18 @@ public class MySQLManager : IDisposable
         return rowsAffected > 0;
     }
 
+    public async Task<long> GetTotalLogs()
+    {
+        string sql_select = $"SELECT COUNT(*) FROM `{_tablePrefix}Log`;";
+
+        MySqlCommand query_select = new(sql_select, _connection);
+
+        object obj = await query_select.ExecuteScalarAsync();
+        long totalLogs = (long)obj;
+
+        return totalLogs;
+    }
+
     public async Task AddLog(MarketplaceItem soldItem, ulong buyerID, bool paid)
     {
         string sql_insert = $"INSERT INTO `{_tablePrefix}Log` (`ItemID`, `ItemName`, `ItemPrice`, `SellerID`, `BuyerID`, `Paid`) VALUES (@id, @name, @price, @sellerID, @buyerID, @paid);";
@@ -158,6 +210,63 @@ public class MySQLManager : IDisposable
         query_insert.Parameters.AddWithValue("@paid", paid ? 1 : 0);
 
         await query_insert.ExecuteNonQueryAsync();
+    }
+
+    public async Task<List<SellLog>> GetLatestLogs()
+    {
+        string sql_select = $"SELECT ItemName, ItemPrice, SellerName, BuyerName FROM `{_tablePrefix}Log` ORDER BY `ID` DESC LIMIT 10;";
+
+        MySqlCommand query_select = new(sql_select, _connection);
+
+        DbDataReader reader = await query_select.ExecuteReaderAsync();
+
+        if (!reader.HasRows)
+        {
+            reader.Close();
+            return new();
+        }
+
+        List<SellLog> logs = new();
+
+        while (await reader.ReadAsync())
+        {
+            string itemName = reader.GetString(0);
+            int itemPrice = reader.GetInt32(1);
+            string sellerName = reader.GetString(2);
+            string buyerName = reader.GetString(3);
+
+            logs.Add(new(itemName, itemPrice, sellerName, buyerName));
+        }
+
+        reader.Close();
+        return logs;
+    }
+
+    public async Task<Dictionary<ushort, string>> GetDistinctItems()
+    {
+        string sql_select = $"SELECT DISTINCT `ItemID`, `ItemName` FROM `{_tablePrefix}Item`;";
+
+        MySqlCommand query_select = new(sql_select, _connection);
+        DbDataReader reader = await query_select.ExecuteReaderAsync();
+
+        if (!reader.HasRows)
+        {
+            reader.Close();
+            return new();
+        }
+
+        Dictionary<ushort, string> items = new();
+
+        while (await reader.ReadAsync())
+        {
+            ushort itemID = (ushort)reader.GetValue(0);
+            string itemName = reader.GetString(1);
+
+            items.Add(itemID, itemName);
+        }
+
+        reader.Close();
+        return items;
     }
 
     public async Task<int> GetPendingPaids(ulong playerID)

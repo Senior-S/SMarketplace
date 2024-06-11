@@ -75,7 +75,7 @@ public class ListItem : IRocketCommand
         itemName = itemJar.item.GetAsset().FriendlyName;
         user.Player.inventory.removeItem(itemPage, itemIndex);
         Instance._msgHelper.Say(user, "info_item", false);
-        MarketplaceItem item = new(itemJar.item, price, user.CSteamID.m_SteamID);
+        MarketplaceItem item = new(itemJar.item, price, user.CSteamID.m_SteamID, user.CharacterName);
         Task.Run(async () =>
         {
             bool listed = await Instance.marketplaceService.ListItem(item);

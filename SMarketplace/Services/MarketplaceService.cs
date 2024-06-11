@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using static SDG.Provider.SteamGetInventoryResponse;
 
 namespace SeniorS.SMarketplace.Services;
 public class MarketplaceService : IDisposable
@@ -17,6 +18,8 @@ public class MarketplaceService : IDisposable
 
     private readonly Timer _timer;
     private readonly bool _filterMapItems;
+
+    public Dictionary<ushort, string> distinctItems { get; private set; }
     
     public MarketplaceService(int cacheUpdateDelay, bool filterMapItems)
     {
@@ -29,6 +32,7 @@ public class MarketplaceService : IDisposable
         MySQLManager dbManager = new();
         dbManager.Init();
         List<MarketplaceItem> items = await dbManager.GetItems();
+        distinctItems = await GetDistinctItems();
         dbManager.Dispose();
 
         if (_filterMapItems)
@@ -68,12 +72,55 @@ public class MarketplaceService : IDisposable
         });
     }
 
+    private async Task<Dictionary<ushort, string>> GetDistinctItems()
+    {
+        MySQLManager dbManager = new();
+        Dictionary<ushort, string> items = await dbManager.GetDistinctItems();
+        return items;
+    }
+
     public List<MarketplaceItem> SearchCoincidences(string itemName)
     {
         if (itemName.Length < 1) return new();
         List<MarketplaceItem> items = marketplaceItems.Where(c => c.ItemName.ToLower().Contains(itemName.ToLower())).ToList();
 
         return items;
+    }
+
+    public List<MarketplaceItem> FilterItems(ushort itemID)
+    {
+        List<MarketplaceItem> items = marketplaceItems.Where(c => c.ItemID == itemID).ToList();
+
+        return items;
+    }
+
+    public async Task<bool> ListMultipleItems(List<MarketplaceItem> items)
+    {
+        try
+        {
+            MySQLManager dbManager = new();
+
+            // It uploads one item at a time due I required the exact ID of the item added.
+            // I can technically get the possible ID getting the last ID before submit but it can lead to unexpected behaviours.
+            foreach (MarketplaceItem item in items) 
+            {
+                int id = await dbManager.AddItem(item);
+                item.ID = id;
+                marketplaceItems.Add(item);
+            }
+
+            dbManager.Dispose();
+            distinctItems = await GetDistinctItems();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            TaskDispatcher.QueueOnMainThread(() =>
+            {
+                Logger.Log(ex);
+            });
+            return false;
+        }
     }
 
     public async Task<bool> ListItem(MarketplaceItem item)
@@ -88,6 +135,7 @@ public class MarketplaceService : IDisposable
             item.ID = id;
             marketplaceItems.Add(item);
 
+            distinctItems = await GetDistinctItems();
             return true;
         }
         catch (Exception ex)
@@ -114,6 +162,7 @@ public class MarketplaceService : IDisposable
                 marketplaceItems.Remove(item);
             }
 
+            distinctItems = await GetDistinctItems();
             return removed;
         }
         catch (Exception)
@@ -156,7 +205,28 @@ public class MarketplaceService : IDisposable
             }
         });
 
+        distinctItems = await GetDistinctItems();
         return EError.None;
+    }
+
+    public async Task<string> GetFormattedLogs()
+    {
+        MySQLManager dbManager = new();
+        List<SellLog> logs = await dbManager.GetLatestLogs();
+
+        string formattedLogs = "";
+        if(logs.Count > 0)
+        {
+            logs.ForEach(log =>
+            {
+                formattedLogs += SMarketplace.Instance._msgHelper.FormatMessage("ui_selllog_format", log.BuyerName, log.ItemName, log.SellerName, log.ItemPrice) + Environment.NewLine;
+            });
+
+            formattedLogs = formattedLogs.Remove(formattedLogs.Length - Environment.NewLine.Length, Environment.NewLine.Length);
+        }
+        
+
+        return formattedLogs;
     }
 
     public List<MarketplaceItem> GetPlayerListedItems(ulong playerID)
@@ -166,9 +236,30 @@ public class MarketplaceService : IDisposable
         return items;
     }
 
-    public List<MarketplaceItem> GetPageItems(int page)
+    public async Task<long> GetTotalBought()
     {
-        return marketplaceItems.Skip(8 * page).Take(8).ToList();
+        MySQLManager dbManager = new();
+        long totalBought = await dbManager.GetTotalLogs();
+        dbManager.Dispose();
+
+        return totalBought;
+    }
+
+    public int GetTotalSellers()
+    {
+        return marketplaceItems.Select(c => c.SellerID).Distinct().Count();
+    }
+
+    public List<MarketplaceItem> GetPageItems(int page, ushort itemID)
+    {
+        List<MarketplaceItem> items = FilterItems(itemID);
+
+        return items.Skip(5 * page).Take(5).ToList();
+    }
+
+    public List<KeyValuePair<ushort, string>> GetPageFilter(int page)
+    {
+        return distinctItems.Skip(20 * page).Take(20).ToList();
     }
 
     private uint GetPlayerBalance(Player player)
