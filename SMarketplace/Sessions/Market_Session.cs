@@ -314,7 +314,7 @@ public class Market_Session : MonoBehaviour
         int searchPages = (int)Math.Ceiling((decimal)items.Count / 6);
         int inventoryPages = (int)Math.Ceiling((decimal)this._playerListedItems.Count / 8);
         int filterPages = (int)Math.Ceiling((decimal)Instance.marketplaceService.distinctItems.Count / 20);
-        int storePages = (int)Math.Ceiling((decimal)_pageItems.Count / 5);
+        int storePages = _pageItems != null ? (int)Math.Ceiling((decimal)_pageItems.Count / 5) : 1;
         switch (buttonName)
         {
             case "Home":

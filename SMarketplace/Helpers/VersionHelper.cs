@@ -36,7 +36,7 @@ public class VersionHelper
 
         JObject jsonObject = JObject.Parse(responseBody);
 
-        return $"{jsonObject["branches"][0]["versions"].Last()["name"]}.0";
+        return $"{jsonObject["branches"][0]["versions"].Last()["name"]}";
 
     }
 }
