@@ -636,7 +636,7 @@ public class Market_Session : MonoBehaviour
 
                 for (int i = 0; i < distinctItems.Count; i++)
                 {
-                    EffectManager.sendUIEffectImageURL(_keyID, connection, false, $"Canvas/Background/Filter_Tab/Filter_Gameobject/FilterItem_{i + 1}/Background/FilterItem_{i + 1}_Icon", Instance.Configuration.Instance.iconsCDN.Replace("{0}", distinctItems[i].Key.ToString()));
+                    EffectManager.sendUIEffectImageURL(_keyID, connection, false, $"Canvas/Background/Filter_Tab/Filter_Gameobject/FilterItem_{i + 1}/Background/FilterItem_{i + 1}_Icon", Instance.Configuration.Instance.iconsCDN.Replace("{0}", distinctItems[i].Key.ToString()), true, true);
                     EffectManager.sendUIEffectText(_keyID, connection, false, $"Canvas/Background/Filter_Tab/Filter_Gameobject/FilterItem_{i + 1}/FilterItem_{i + 1}_Name", distinctItems[i].Value);
 
                     EffectManager.sendUIEffectVisibility(_keyID, connection, false, $"Canvas/Background/Filter_Tab/Filter_Gameobject/FilterItem_{i + 1}", true);
