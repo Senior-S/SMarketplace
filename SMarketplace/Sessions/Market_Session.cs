@@ -314,7 +314,7 @@ public class Market_Session : MonoBehaviour
         int searchPages = (int)Math.Ceiling((decimal)items.Count / 6);
         int inventoryPages = (int)Math.Ceiling((decimal)this._playerListedItems.Count / 8);
         int filterPages = (int)Math.Ceiling((decimal)Instance.marketplaceService.distinctItems.Count / 20);
-        int storePages = (int)Math.Ceiling((decimal)Instance.marketplaceService.marketplaceItems.Count / 5);
+        int storePages = (int)Math.Ceiling((decimal)_pageItems.Count / 5);
         switch (buttonName)
         {
             case "Home":
@@ -621,7 +621,6 @@ public class Market_Session : MonoBehaviour
                             Rocket.Core.Logging.Logger.Log(ex);
                         });
                     }
-                    
                 });
 
                 break;
@@ -647,7 +646,7 @@ public class Market_Session : MonoBehaviour
 
                 this._pageItems = Instance.marketplaceService.GetPageItems(_storeCurrentPage, _actualFilter);
 
-                int storePages = (int)Math.Ceiling((decimal)Instance.marketplaceService.marketplaceItems.Count / 5);
+                int storePages = (int)Math.Ceiling((decimal)_pageItems.Count / 5);
                 storePages = storePages == 0 ? 1 : storePages;
                 EffectManager.sendUIEffectText(this._keyID, connection, true, "StorePage", $"<b>{_storeCurrentPage + 1}</b>/<b>{storePages}</b>");
 
@@ -860,9 +859,9 @@ public class Market_Session : MonoBehaviour
     {
         ITransportConnection connection = _player.channel.owner.transportConnection;
         string attachmentName = attachmentType.ToString();
-        string attachmentOnOff = attachmentID != 0 ? $"{attachmentName}_On" : $"{attachmentName}_Off";
 
-        EffectManager.sendUIEffectVisibility(_keyID, connection, false, $"Canvas/Background/Store_Tab/Store_Gameobject/StoreItem_{storeIndex}/StoreItem_{storeIndex}_Attachments/{attachmentOnOff}", true);
+        EffectManager.sendUIEffectVisibility(_keyID, connection, false, $"Canvas/Background/Store_Tab/Store_Gameobject/StoreItem_{storeIndex}/StoreItem_{storeIndex}_Attachments/{attachmentName}_On", attachmentID != 0);
+        EffectManager.sendUIEffectVisibility(_keyID, connection, false, $"Canvas/Background/Store_Tab/Store_Gameobject/StoreItem_{storeIndex}/StoreItem_{storeIndex}_Attachments/{attachmentName}_Off", attachmentID == 0);
     }
 
     private void Close()
