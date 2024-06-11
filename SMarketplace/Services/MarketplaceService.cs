@@ -190,7 +190,7 @@ public class MarketplaceService : IDisposable
         }
         marketplaceItems.Remove(item);
         
-        await dbManager.AddLog(item, buyer.channel.owner.playerID.steamID.m_SteamID, isSellerOnline);
+        await dbManager.AddLog(item, buyer.channel.owner.playerID.steamID.m_SteamID, buyer.channel.owner.playerID.characterName, isSellerOnline);
         dbManager.Dispose();
 
         TaskDispatcher.QueueOnMainThread(() =>

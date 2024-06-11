@@ -102,7 +102,7 @@ public class SMarketplace : RocketPlugin<Configuration>
         { "ui_totalsellers_title", "Total Sellers" },
         { "ui_totalbought_title", "Total Bought" },
         { "ui_upload_price_placeholder", "Enter price..." },
-        { "ui_selllog_format", "-=b=-{0}-=/b=- bought a -=i=-{1}=- from -=b=-{2}-=/b=- for ${3}" },
+        { "ui_selllog_format", "-=b=-{0}-=/b=- bought a -=i=-{1}-=/i=- from -=b=-{2}-=/b=- for ${3}" },
         { "error_upload_max", "Oops, you can't upload more than 28 items at a time!" },
         { "error_upload_min", "Oops, you need to atlest put 1 item on the box!" },
         { "error_upload_incomplete", "You can't change of tabs until you submit or cancel!" },
