@@ -107,6 +107,7 @@ public class SMarketplace : RocketPlugin<Configuration>
         { "error_upload_min", "Oops, you need to atlest put 1 item on the box!" },
         { "error_upload_incomplete", "You can't change of tabs until you submit or cancel!" },
         { "error_price", "The price must be greater than 0!" },
+        { "error_price_max", "The max price for any item is {0}!" },
         { "error_equipment", "You need to have the item you wanna sell on hand!" },
         { "error_item", "An item with name {0} wasn't found in your inventory!" },
         { "error_blacklist", "Sorry! This item can't be listed on the marketplace!" },
@@ -116,7 +117,10 @@ public class SMarketplace : RocketPlugin<Configuration>
         { "success_item", "Your {0} is now being sold at the marketplace!" },
         { "success_upload", "Your items are now being sold at the marketplace!" },
         { "success_buy", "You have successfully bought a {0} from the marketplace!" },
-        { "success_pending_paid", "You have made ${0} while you were offline!" }
+        { "success_pending_paid", "You have made ${0} while you were offline!" },
+        { "webhook_purchase", "Purchased a {0} for ${1} from {2}" },
+        { "webhook_list", "Put up a listing of a {0} for ${1}" },
+        { "webhook_delist", "Took down their listing of a {0} for ${1}" }
     };
 
     protected override void Unload()

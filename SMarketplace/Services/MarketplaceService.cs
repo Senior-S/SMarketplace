@@ -3,6 +3,8 @@ using Rocket.Core.Logging;
 using Rocket.Core.Utils;
 using SDG.Unturned;
 using SeniorS.SMarketplace.Models;
+using SS.WebhookHelper;
+using SS.WebhookHelper.Models;
 using Steamworks;
 using System;
 using System.Collections.Generic;
@@ -15,14 +17,16 @@ namespace SeniorS.SMarketplace.Services;
 public class MarketplaceService : IDisposable
 {
     public List<MarketplaceItem> marketplaceItems { get; private set; }
+    public Dictionary<ushort, string> distinctItems { get; private set; }
+
 
     private readonly Timer _timer;
-    private readonly bool _filterMapItems;
+    private readonly bool _filterMapItems;    
+    private SMarketplace Instance;
 
-    public Dictionary<ushort, string> distinctItems { get; private set; }
-    
     public MarketplaceService(int cacheUpdateDelay, bool filterMapItems)
     {
+        Instance = SMarketplace.Instance;
         _timer = new Timer(CheckExpiredItems, null, TimeSpan.Zero, cacheUpdateDelay > 0 ? TimeSpan.FromMinutes(cacheUpdateDelay) : TimeSpan.FromMinutes(45));
         _filterMapItems = filterMapItems;
     }
@@ -102,12 +106,32 @@ public class MarketplaceService : IDisposable
 
             // It uploads one item at a time due I required the exact ID of the item added.
             // I can technically get the possible ID getting the last ID before submit but it can lead to unexpected behaviours.
+            WebhookMessage message = new("SMarketplace", avatarUrl: "https://i.imgur.com/xKptAbP.png");
+
             foreach (MarketplaceItem item in items) 
             {
                 int id = await dbManager.AddItem(item);
                 item.ID = id;
                 marketplaceItems.Add(item);
+
+                Embed embed = new();
+                embed.SetThumbnail(new EmbedThumbnail(Instance.Configuration.Instance.iconsCDN.Replace("{0}", item.ItemID.ToString())));
+                embed.SetDescription(Instance._msgHelper.FormatMessage("webhook_list", item.ItemName, item.Price));
+                embed.SetAuthor(new EmbedAuthor(item.SellerName, "https://steamcommunity.com/profiles/" + item.SellerID.ToString(), ""));
+                embed.SetFooter(new EmbedFooter(Provider.serverName, null));
+
+                try
+                {
+                    message.AppendEmbed(embed);
+                }
+                catch (ArgumentOutOfRangeException ex) // If the message already have the limit of 10 embeds then send the current message and define a new one to add the pending embeds/items.
+                {
+                    await SendWebhook(message);
+                    message = new("SMarketplace", avatarUrl: "https://i.imgur.com/xKptAbP.png");
+                }
             }
+
+            await SendWebhook(message);
 
             dbManager.Dispose();
             distinctItems = await GetDistinctItems();
@@ -123,6 +147,29 @@ public class MarketplaceService : IDisposable
         }
     }
 
+    private async Task SendWebhook(WebhookMessage message)
+    {
+        string webhookURL = Instance.Configuration.Instance.webhookURL;
+        try
+        {
+            int result = await WebhookHelper.PostWebhookAsync(webhookURL, message);
+            if (result != 0)
+            {
+                TaskDispatcher.QueueOnMainThread(() =>
+                {
+                    Logger.LogWarning($"Error while sending webhook. Error code: {result}");
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            TaskDispatcher.QueueOnMainThread(() =>
+            {
+                Logger.LogException(ex, "Webhook error");
+            });
+        }
+    }
+
     public async Task<bool> ListItem(MarketplaceItem item)
     {
         try
@@ -134,6 +181,16 @@ public class MarketplaceService : IDisposable
 
             item.ID = id;
             marketplaceItems.Add(item);
+
+            Embed embed = new();
+            embed.SetThumbnail(new EmbedThumbnail(Instance.Configuration.Instance.iconsCDN.Replace("{0}", item.ItemID.ToString())));
+            embed.SetDescription(Instance._msgHelper.FormatMessage("webhook_list", item.ItemName, item.Price));
+            embed.SetAuthor(new EmbedAuthor(item.SellerName, "https://steamcommunity.com/profiles/" + item.SellerID.ToString(), ""));
+            embed.SetFooter(new EmbedFooter(Provider.serverName, null));
+
+            WebhookMessage message = new("SMarketplace", avatarUrl: "https://i.imgur.com/xKptAbP.png");
+            message.AppendEmbed(embed);
+            await SendWebhook(message);
 
             distinctItems = await GetDistinctItems();
             return true;
@@ -160,6 +217,16 @@ public class MarketplaceService : IDisposable
             if (removed)
             {
                 marketplaceItems.Remove(item);
+
+                Embed embed = new();
+                embed.SetThumbnail(new EmbedThumbnail(Instance.Configuration.Instance.iconsCDN.Replace("{0}", item.ItemID.ToString())));
+                embed.SetDescription(Instance._msgHelper.FormatMessage("webhook_delist", item.ItemName, item.Price));
+                embed.SetAuthor(new EmbedAuthor(item.SellerName, "https://steamcommunity.com/profiles/" + item.SellerID.ToString(), ""));
+                embed.SetFooter(new EmbedFooter(Provider.serverName, null));
+
+                WebhookMessage message = new("SMarketplace", avatarUrl: "https://i.imgur.com/xKptAbP.png");
+                message.AppendEmbed(embed);
+                await SendWebhook(message);
             }
 
             distinctItems = await GetDistinctItems();
@@ -193,6 +260,16 @@ public class MarketplaceService : IDisposable
         await dbManager.AddLog(item, buyer.channel.owner.playerID.steamID.m_SteamID, buyer.channel.owner.playerID.characterName, isSellerOnline);
         dbManager.Dispose();
 
+        Embed embed = new();
+        embed.SetThumbnail(new EmbedThumbnail(Instance.Configuration.Instance.iconsCDN.Replace("{0}", item.ItemID.ToString())));
+        embed.SetDescription(Instance._msgHelper.FormatMessage("webhook_purchase", item.ItemName, item.Price, item.SellerName));
+        embed.SetAuthor(new EmbedAuthor(buyer.channel.owner.playerID.characterName, "https://steamcommunity.com/profiles/" + buyer.channel.owner.playerID.steamID.ToString(), ""));
+        embed.SetFooter(new EmbedFooter(Provider.serverName, null));
+
+        WebhookMessage message = new("SMarketplace", avatarUrl: "https://i.imgur.com/xKptAbP.png");
+        message.AppendEmbed(embed);
+        await SendWebhook(message);
+
         TaskDispatcher.QueueOnMainThread(() =>
         {
             UpdatePlayerBalance(buyer, ((int)item.Price * -1));
@@ -219,7 +296,7 @@ public class MarketplaceService : IDisposable
         {
             logs.ForEach(log =>
             {
-                formattedLogs += SMarketplace.Instance._msgHelper.FormatMessage("ui_selllog_format", log.BuyerName, log.ItemName, log.SellerName, log.ItemPrice) + Environment.NewLine;
+                formattedLogs += Instance._msgHelper.FormatMessage("ui_selllog_format", log.BuyerName, log.ItemName, log.SellerName, log.ItemPrice) + Environment.NewLine;
             });
 
             formattedLogs = formattedLogs.Remove(formattedLogs.Length - Environment.NewLine.Length, Environment.NewLine.Length);
@@ -264,7 +341,7 @@ public class MarketplaceService : IDisposable
 
     private uint GetPlayerBalance(Player player)
     {
-        if (SMarketplace.Instance.Configuration.Instance.useUconomy)
+        if (Instance.Configuration.Instance.useUconomy)
         {
             return (uint)Uconomy.Instance.Database.GetBalance(player.channel.owner.playerID.steamID.ToString());
         }
@@ -274,7 +351,7 @@ public class MarketplaceService : IDisposable
 
     public void UpdatePlayerBalance(Player player, int amount)
     {
-        if (SMarketplace.Instance.Configuration.Instance.useUconomy)
+        if (Instance.Configuration.Instance.useUconomy)
         {
             Uconomy.Instance.Database.IncreaseBalance(player.channel.owner.playerID.steamID.ToString(), amount);
 

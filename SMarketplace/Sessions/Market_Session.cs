@@ -13,6 +13,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Windows;
 
 namespace SeniorS.SMarketplace.Sessions;
 public class Market_Session : MonoBehaviour
@@ -141,7 +142,13 @@ public class Market_Session : MonoBehaviour
                 return;
             }
 
-            int index = int.Parse(buttonName.Substring(10, 1));
+            if(price > Instance.Configuration.Instance.maxItemPrice)
+            {
+                SendNotification(Instance._msgHelper.FormatMessage("error_price_max", Instance.Configuration.Instance.maxItemPrice), ENotification.Error);
+                return;
+            }
+
+            int index = int.Parse(Regex.Replace(buttonName, "[^0-9]", ""));
             _uploadItems[index - 1].Price = price;
             return;
         }
@@ -166,7 +173,7 @@ public class Market_Session : MonoBehaviour
         string filterItemPattern = @"^FilterItem_\d+$";
         if(Regex.Match(buttonName, filterItemPattern).Success)
         {
-            int index = int.Parse(buttonName.Substring(11, 1));
+            int index = int.Parse(Regex.Replace(buttonName, "[^0-9]", ""));
             List<KeyValuePair<ushort, string>> distinctItems = Instance.marketplaceService.GetPageFilter(_filterCurrentPage);
             ushort filterItem = distinctItems[index - 1].Key;
 

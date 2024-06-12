@@ -19,6 +19,8 @@ public class Configuration : IRocketPluginConfiguration
         iconsCDN = "https://cdn.lyhme.gg/items/{0}.png";
         updateCacheMinutes = 0;
         filterMapItems = false;
+        maxItemPrice = 2000000;
+        webhookURL = "";
 
         blacklistedItems = new()
         {
@@ -44,6 +46,9 @@ public class Configuration : IRocketPluginConfiguration
     public string iconsCDN;
     public int updateCacheMinutes = 0;
     public bool filterMapItems = false;
+    public int maxItemPrice = 2000000;
+    public string webhookURL = string.Empty;
+    
 
     [XmlArrayItem("ItemID")]
     public List<ushort> blacklistedItems = new();
