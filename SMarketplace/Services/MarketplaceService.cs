@@ -2,6 +2,7 @@
 using Rocket.Core.Logging;
 using Rocket.Core.Utils;
 using SDG.Unturned;
+using SeniorS.SMarketplace.Helpers;
 using SeniorS.SMarketplace.Models;
 using SS.WebhookHelper;
 using SS.WebhookHelper.Models;
@@ -11,7 +12,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using static SDG.Provider.SteamGetInventoryResponse;
 
 namespace SeniorS.SMarketplace.Services;
 public class MarketplaceService : IDisposable
@@ -116,9 +116,22 @@ public class MarketplaceService : IDisposable
 
                 Embed embed = new();
                 embed.SetThumbnail(new EmbedThumbnail(Instance.Configuration.Instance.iconsCDN.Replace("{0}", item.ItemID.ToString())));
-                embed.SetDescription(Instance._msgHelper.FormatMessage("webhook_list", item.ItemName, item.Price));
-                embed.SetAuthor(new EmbedAuthor(item.SellerName, "https://steamcommunity.com/profiles/" + item.SellerID.ToString(), ""));
+                embed.SetTitle("Marketplace");
+                embed.SetDescription("> " + Instance._msgHelper.FormatMessage("webhook_list", item.ItemName, item.Price));
+                embed.SetAuthor(new EmbedAuthor(item.SellerName, "https://steamcommunity.com/profiles/" + item.SellerID.ToString(), AvatarGrabber.GetAvatar(item.SellerID)));
                 embed.SetFooter(new EmbedFooter(Provider.serverName, null));
+                try // If the hex color isn't correct this can thrown an error and mess up the function, so I add this to a try/catch to avoid this errors.
+                {
+                    embed.SetHexColor(Instance.Configuration.Instance.listEmbedColor);
+                }
+                catch(Exception ex)
+                {
+                    TaskDispatcher.QueueOnMainThread(() =>
+                    {
+                        Logger.LogException(ex);
+                    });
+                } 
+                embed.AddTimestamp();
 
                 try
                 {
@@ -184,9 +197,12 @@ public class MarketplaceService : IDisposable
 
             Embed embed = new();
             embed.SetThumbnail(new EmbedThumbnail(Instance.Configuration.Instance.iconsCDN.Replace("{0}", item.ItemID.ToString())));
-            embed.SetDescription(Instance._msgHelper.FormatMessage("webhook_list", item.ItemName, item.Price));
-            embed.SetAuthor(new EmbedAuthor(item.SellerName, "https://steamcommunity.com/profiles/" + item.SellerID.ToString(), ""));
+            embed.SetTitle("Marketplace");
+            embed.SetDescription("> " + Instance._msgHelper.FormatMessage("webhook_list", item.ItemName, item.Price));
+            embed.SetAuthor(new EmbedAuthor(item.SellerName, "https://steamcommunity.com/profiles/" + item.SellerID.ToString(), AvatarGrabber.GetAvatar(item.SellerID)));
             embed.SetFooter(new EmbedFooter(Provider.serverName, null));
+            embed.SetHexColor(Instance.Configuration.Instance.listEmbedColor);
+            embed.AddTimestamp();
 
             WebhookMessage message = new("SMarketplace", avatarUrl: "https://i.imgur.com/xKptAbP.png");
             message.AppendEmbed(embed);
@@ -220,9 +236,12 @@ public class MarketplaceService : IDisposable
 
                 Embed embed = new();
                 embed.SetThumbnail(new EmbedThumbnail(Instance.Configuration.Instance.iconsCDN.Replace("{0}", item.ItemID.ToString())));
-                embed.SetDescription(Instance._msgHelper.FormatMessage("webhook_delist", item.ItemName, item.Price));
-                embed.SetAuthor(new EmbedAuthor(item.SellerName, "https://steamcommunity.com/profiles/" + item.SellerID.ToString(), ""));
+                embed.SetTitle("Marketplace");
+                embed.SetDescription("> " + Instance._msgHelper.FormatMessage("webhook_delist", item.ItemName, item.Price));
+                embed.SetAuthor(new EmbedAuthor(item.SellerName, "https://steamcommunity.com/profiles/" + item.SellerID.ToString(), AvatarGrabber.GetAvatar(item.SellerID)));
                 embed.SetFooter(new EmbedFooter(Provider.serverName, null));
+                embed.SetHexColor(Instance.Configuration.Instance.delistEmbedColor);
+                embed.AddTimestamp();
 
                 WebhookMessage message = new("SMarketplace", avatarUrl: "https://i.imgur.com/xKptAbP.png");
                 message.AppendEmbed(embed);
@@ -262,9 +281,12 @@ public class MarketplaceService : IDisposable
 
         Embed embed = new();
         embed.SetThumbnail(new EmbedThumbnail(Instance.Configuration.Instance.iconsCDN.Replace("{0}", item.ItemID.ToString())));
-        embed.SetDescription(Instance._msgHelper.FormatMessage("webhook_purchase", item.ItemName, item.Price, item.SellerName));
-        embed.SetAuthor(new EmbedAuthor(buyer.channel.owner.playerID.characterName, "https://steamcommunity.com/profiles/" + buyer.channel.owner.playerID.steamID.ToString(), ""));
+        embed.SetTitle("Marketplace");
+        embed.SetDescription("> " + Instance._msgHelper.FormatMessage("webhook_purchase", item.ItemName, item.Price, item.SellerName));
+        embed.SetAuthor(new EmbedAuthor(buyer.channel.owner.playerID.characterName, "https://steamcommunity.com/profiles/" + buyer.channel.owner.playerID.steamID.ToString(), AvatarGrabber.GetAvatar(buyer.channel.owner.playerID.steamID.m_SteamID)));
         embed.SetFooter(new EmbedFooter(Provider.serverName, null));
+        embed.SetHexColor(Instance.Configuration.Instance.buyEmbedColor);
+        embed.AddTimestamp();
 
         WebhookMessage message = new("SMarketplace", avatarUrl: "https://i.imgur.com/xKptAbP.png");
         message.AppendEmbed(embed);
@@ -308,7 +330,13 @@ public class MarketplaceService : IDisposable
 
     public List<MarketplaceItem> GetPlayerListedItems(ulong playerID)
     {
-        List<MarketplaceItem> items = marketplaceItems.Where(c => c.SellerID == playerID).ToList();
+        var filter = marketplaceItems.Where(c => c.SellerID == playerID);
+        List<MarketplaceItem> items = new();
+
+        if(filter.Count() > 0)
+        {
+            items = marketplaceItems.Where(c => c.SellerID == playerID).ToList();
+        }
 
         return items;
     }
@@ -364,6 +392,6 @@ public class MarketplaceService : IDisposable
     public void Dispose()
     {
         _timer.Dispose();
-        marketplaceItems.Clear();
+        marketplaceItems?.Clear();
     }
 }

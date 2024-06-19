@@ -343,7 +343,8 @@
     <Compile Include="Commands\ListItem.cs" />
     <Compile Include="Commands\Marketplace.cs" />
     <Compile Include="Configuration.cs" />
-    <Compile Include="Helpers\VersionHelper.cs" />
+    <Compile Include="Helpers\AvatarGrabber.cs" />
+    <Compile Include="Helpers\WebHelper.cs" />
     <Compile Include="Models\EAttachmentType.cs" />
     <Compile Include="Models\EError.cs" />
     <Compile Include="Models\ENotification.cs" />
@@ -353,7 +354,6 @@
     <Compile Include="Patchs\Inventory_Patch.cs" />
     <Compile Include="ProjectMain.cs" />
     <Compile Include="Helpers\MessageHelper.cs" />
-    <Compile Include="Helpers\RaycastHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\MarketplaceService.cs" />
     <Compile Include="Services\MySQLManager.cs" />

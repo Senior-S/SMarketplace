@@ -6,6 +6,7 @@ using Rocket.Unturned.Player;
 using SDG.Unturned;
 using SeniorS.SMarketplace.Helpers;
 using SeniorS.SMarketplace.Services;
+using System.IO;
 using System.Threading.Tasks;
 using Logger = Rocket.Core.Logging.Logger;
 
@@ -26,15 +27,18 @@ public class SMarketplace : RocketPlugin<Configuration>
         Instance = this;
         _msgHelper = new();
         connectionString = $"Server={Configuration.Instance.dbServer};Port={Configuration.Instance.dbPort};Database={Configuration.Instance.dbDatabase};Uid={Configuration.Instance.dbUser};Pwd={Configuration.Instance.dbPassword};";
-        harmony = new ("com.seniors.smarketplace");
+        harmony = new("com.seniors.smarketplace");
         harmony.PatchAll(this.Assembly);
+
+        
+        WebHelper.LoadWebhookLibrary(); // This function isn't on a try/catch due if this library isn't present, the whole plugin will not work properly.
 
         Provider.onEnemyConnected += OnEnemyConnected;
         Level.onLevelLoaded += OnLevelLoaded;
 
         Task.Run(async () =>
         {
-            string latestVersion = await VersionHelper.GetLatestVersion();
+            string latestVersion = await WebHelper.GetLatestVersion();
 
             if(this.Assembly.GetName().Version.ToString() != latestVersion)
             {
@@ -50,13 +54,18 @@ public class SMarketplace : RocketPlugin<Configuration>
             }
         });
 
+        if (Level.isLoaded)
+        {
+            marketplaceService = new(Configuration.Instance.updateCacheMinutes, Configuration.Instance.filterMapItems);
+        }
+
         Logger.Log($"SMarketplace v{this.Assembly.GetName().Version}");
         Logger.Log("<<SSPlugins>>");
     }
 
     private void OnLevelLoaded(int level)
     {
-        marketplaceService = new(Configuration.Instance.updateCacheMinutes, Configuration.Instance.filterMapItems);
+        marketplaceService ??= new(Configuration.Instance.updateCacheMinutes, Configuration.Instance.filterMapItems);     
     }
 
     private void OnEnemyConnected(SteamPlayer player)
@@ -129,7 +138,7 @@ public class SMarketplace : RocketPlugin<Configuration>
         _msgHelper = null;
         marketplaceService.Dispose();
 
-        harmony.UnpatchAll(harmony.Id); 
+        harmony.UnpatchAll(harmony.Id);
         Provider.onEnemyConnected -= OnEnemyConnected;
         Level.onLevelLoaded -= OnLevelLoaded;
 

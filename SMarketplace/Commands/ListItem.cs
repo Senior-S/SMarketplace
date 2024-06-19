@@ -41,6 +41,11 @@ public class ListItem : IRocketCommand
             Instance._msgHelper.Say(user, "error_price", true);
             return;
         }
+        if(price > Instance.Configuration.Instance.maxItemPrice)
+        {
+            Instance._msgHelper.Say(user, "error_price_max", true, Instance.Configuration.Instance.maxItemPrice);
+            return;
+        }
 
         string itemName = string.Join(" ", command.Take(command.Length - 1)).ToLower();
         ItemJar itemJar = null;

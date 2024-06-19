@@ -21,6 +21,9 @@ public class Configuration : IRocketPluginConfiguration
         filterMapItems = false;
         maxItemPrice = 2000000;
         webhookURL = "";
+        buyEmbedColor = "#5783DB";
+        listEmbedColor = "#F1C40F";
+        delistEmbedColor = "#E74C3C";
 
         blacklistedItems = new()
         {
@@ -48,7 +51,9 @@ public class Configuration : IRocketPluginConfiguration
     public bool filterMapItems = false;
     public int maxItemPrice = 2000000;
     public string webhookURL = string.Empty;
-    
+    public string buyEmbedColor = "#5783DB";
+    public string listEmbedColor = "#F1C40F";
+    public string delistEmbedColor = "#E74C3C";
 
     [XmlArrayItem("ItemID")]
     public List<ushort> blacklistedItems = new();
@@ -57,6 +62,6 @@ public class Configuration : IRocketPluginConfiguration
     public string dbPort;
     public string dbUser;
     public string dbPassword;
-    public string dbDatabase;
+    public string dbDatabase = "unturned";
     public string dbTablePrefix = "smarketplace_";
 }

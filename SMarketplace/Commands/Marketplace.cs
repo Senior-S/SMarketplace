@@ -18,7 +18,7 @@ public class Marketplace : IRocketCommand
     public string Syntax => "/Marketplace";
 
     private string SyntaxError => $"Wrong syntax! Correct usage: {Syntax}";
-    public List<string> Aliases => new List<string>();
+    public List<string> Aliases => new List<string> { "market" };
 
     public List<string> Permissions => new List<string> { "ss.command.Marketplace" };
 
