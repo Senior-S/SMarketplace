@@ -63,7 +63,7 @@ public class Market_Session : MonoBehaviour
         EffectManager.sendUIEffectText(_keyID, player.channel.owner.transportConnection, true, "Canvas/Background/Search_Tab/Search_InputField/Text Area/SearchPlaceholder", Instance._msgHelper.FormatMessage("ui_search_placeholder"));
     }
 
-    // !! This event occurs while the UI is still invisible to the user.
+    // This event occurs while the UI is still invisible to the user.
     private void OnPlayerCloseStorage(Player player, Items items)
     {
         if (!_waitingUpload || _player.channel.owner.playerID.steamID != player.channel.owner.playerID.steamID) return;
@@ -244,8 +244,6 @@ public class Market_Session : MonoBehaviour
 
                 TaskDispatcher.QueueOnMainThread(() =>
                 {
-                    _playerListedItems = Instance.marketplaceService.GetPlayerListedItems(player.channel.owner.playerID.steamID.m_SteamID);
-                    
                     if (!removed)
                     {
                         string delistError = Instance._msgHelper.FormatMessage("ui_error_delist");
@@ -254,8 +252,9 @@ public class Market_Session : MonoBehaviour
                         return;
                     }
 
+                    _playerListedItems = Instance.marketplaceService.GetPlayerListedItems(this._player.channel.owner.playerID.steamID.m_SteamID);
+                    
                     player.inventory.forceAddItem(item.GetItem(), true);
-
                     string delistSuccess = Instance._msgHelper.FormatMessage("ui_message_delist", item.ItemName);
                     SendNotification(delistSuccess, ENotification.Success);
                     ChangeTab(ETab.Inventory);
@@ -265,62 +264,62 @@ public class Market_Session : MonoBehaviour
             return;
         }
 
-        string searchBuyPattern = @"^SearchItem_\d+_Buy$";
-        if (Regex.Match(buttonName, searchBuyPattern).Success)
-        {
-            int index = int.Parse(buttonName.Substring(11, 1));
-            MarketplaceItem item = _pageItems[index - 1];
+        //string searchBuyPattern = @"^SearchItem_\d+_Buy$";
+        //if (Regex.Match(buttonName, searchBuyPattern).Success)
+        //{
+        //    int index = int.Parse(buttonName.Substring(11, 1));
+        //    MarketplaceItem item = _pageItems[index - 1];
 
-            EffectManager.sendUIEffectVisibility(_keyID, connection, false, "Canvas/Background/Loading_Tab", true);
-            bool isSellerOnline = Provider.clients.Any(c => c.playerID.steamID.m_SteamID == item.SellerID);
-            Task.Run(async () =>
-            {
-                EError error = await Instance.marketplaceService.TryBuyItem(item, this._player, isSellerOnline);
+        //    EffectManager.sendUIEffectVisibility(_keyID, connection, false, "Canvas/Background/Loading_Tab", true);
+        //    bool isSellerOnline = Provider.clients.Any(c => c.playerID.steamID.m_SteamID == item.SellerID);
+        //    Task.Run(async () =>
+        //    {
+        //        EError error = await Instance.marketplaceService.TryBuyItem(item, this._player, isSellerOnline);
 
-                TaskDispatcher.QueueOnMainThread(() =>
-                {
-                    switch (error)
-                    {
-                        case EError.None:
-                            UnturnedPlayer user = UnturnedPlayer.FromPlayer(this._player);
-                            Instance._msgHelper.Say(user, "success_buy", false, item.ItemName);
-                            Close();
-                            break;
-                        case EError.Balance:
-                            SendNotification(Instance._msgHelper.FormatMessage("ui_error_balance", item.Price), ENotification.Error);
-                            ChangeTab(ETab.Search);
-                            break;
-                        case EError.Item:
-                            SendNotification(Instance._msgHelper.FormatMessage("ui_error_item"), ENotification.Error);
-                            ChangeTab(ETab.Search);
-                            break;
-                    }
-                });
-            });
+        //        TaskDispatcher.QueueOnMainThread(() =>
+        //        {
+        //            switch (error)
+        //            {
+        //                case EError.None:
+        //                    UnturnedPlayer user = UnturnedPlayer.FromPlayer(this._player);
+        //                    Instance._msgHelper.Say(user, "success_buy", false, item.ItemName);
+        //                    Close();
+        //                    break;
+        //                case EError.Balance:
+        //                    SendNotification(Instance._msgHelper.FormatMessage("ui_error_balance", item.Price), ENotification.Error);
+        //                    ChangeTab(ETab.Search);
+        //                    break;
+        //                case EError.Item:
+        //                    SendNotification(Instance._msgHelper.FormatMessage("ui_error_item"), ENotification.Error);
+        //                    ChangeTab(ETab.Search);
+        //                    break;
+        //            }
+        //        });
+        //    });
 
-            return;
-        }
+        //    return;
+        //}
 
-        string searchViewPattern = @"^SearchItem_\d+_View$";
-        if(Regex.Match(buttonName, searchViewPattern).Success)
-        {
-            int index = int.Parse(buttonName.Substring(11, 1));
-            MarketplaceItem item = _pageItems[index - 1];
+        //string searchViewPattern = @"^SearchItem_\d+_View$";
+        //if(Regex.Match(buttonName, searchViewPattern).Success)
+        //{
+        //    int index = int.Parse(buttonName.Substring(11, 1));
+        //    MarketplaceItem item = _pageItems[index - 1];
 
-            EffectManager.sendUIEffectVisibility(_keyID, connection, false, "Canvas/Background/Loading_Tab", true);
+        //    EffectManager.sendUIEffectVisibility(_keyID, connection, false, "Canvas/Background/Loading_Tab", true);
 
-            _infoItem = _pageItems[index - 1];
-            ChangeTab(ETab.Info);
+        //    _infoItem = _pageItems[index - 1];
+        //    ChangeTab(ETab.Info);
 
-            return;
-        }
+        //    return;
+        //}
         #endregion
 
         List<MarketplaceItem> items = Instance.marketplaceService.SearchCoincidences(_searchInputFieldText);
         int searchPages = (int)Math.Ceiling((decimal)items.Count / 6);
         int inventoryPages = (int)Math.Ceiling((decimal)this._playerListedItems.Count / 8);
         int filterPages = (int)Math.Ceiling((decimal)Instance.marketplaceService.distinctItems.Count / 20);
-        int storePages = _pageItems != null ? (int)Math.Ceiling((decimal)_pageItems.Count / 5) : 0;
+        int storePages = _actualFilter > 0 ? (int)Math.Ceiling((decimal)Instance.marketplaceService.GetFiterPages(_actualFilter) / 5) : 0;
         switch (buttonName)
         {
             case "Home":
@@ -640,12 +639,18 @@ public class Market_Session : MonoBehaviour
 
                 if (distinctItems.Count < 1) break;
 
-                for (int i = 0; i < distinctItems.Count; i++)
+                for (int i = 0; i < 20; i++)
                 {
-                    EffectManager.sendUIEffectImageURL(_keyID, connection, false, $"Canvas/Background/Filter_Tab/Filter_Gameobject/FilterItem_{i + 1}/Background/FilterItem_{i + 1}_Icon", Instance.Configuration.Instance.iconsCDN.Replace("{0}", distinctItems[i].Key.ToString()), true, true);
-                    EffectManager.sendUIEffectText(_keyID, connection, false, $"Canvas/Background/Filter_Tab/Filter_Gameobject/FilterItem_{i + 1}/FilterItem_{i + 1}_Name", distinctItems[i].Value);
+                    if(i < distinctItems.Count)
+                    {
+                        EffectManager.sendUIEffectImageURL(_keyID, connection, false, $"Canvas/Background/Filter_Tab/Filter_Gameobject/FilterItem_{i + 1}/Background/FilterItem_{i + 1}_Icon", Instance.Configuration.Instance.iconsCDN.Replace("{0}", distinctItems[i].Key.ToString()), true, true);
+                        EffectManager.sendUIEffectText(_keyID, connection, false, $"Canvas/Background/Filter_Tab/Filter_Gameobject/FilterItem_{i + 1}/FilterItem_{i + 1}_Name", distinctItems[i].Value);
 
-                    EffectManager.sendUIEffectVisibility(_keyID, connection, false, $"Canvas/Background/Filter_Tab/Filter_Gameobject/FilterItem_{i + 1}", true);
+                        EffectManager.sendUIEffectVisibility(_keyID, connection, false, $"Canvas/Background/Filter_Tab/Filter_Gameobject/FilterItem_{i + 1}", true);
+                        continue;
+                    }
+
+                    EffectManager.sendUIEffectVisibility(_keyID, connection, false, $"Canvas/Background/Filter_Tab/Filter_Gameobject/FilterItem_{i + 1}", false);
                 }
                 break;
             case ETab.Store:

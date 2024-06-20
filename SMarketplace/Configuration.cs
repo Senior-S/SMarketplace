@@ -20,6 +20,9 @@ public class Configuration : IRocketPluginConfiguration
         updateCacheMinutes = 0;
         filterMapItems = false;
         maxItemPrice = 2000000;
+        useTaxSystem = false;
+        taxPercentage = (decimal)12.5;
+        useWebhooks = true;
         webhookURL = "";
         buyEmbedColor = "#5783DB";
         listEmbedColor = "#F1C40F";
@@ -50,6 +53,9 @@ public class Configuration : IRocketPluginConfiguration
     public int updateCacheMinutes = 0;
     public bool filterMapItems = false;
     public int maxItemPrice = 2000000;
+    public bool useTaxSystem = false;
+    public decimal taxPercentage = (decimal)12.5;
+    public bool useWebhooks = true;
     public string webhookURL = string.Empty;
     public string buyEmbedColor = "#5783DB";
     public string listEmbedColor = "#F1C40F";

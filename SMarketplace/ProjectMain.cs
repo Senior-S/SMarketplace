@@ -6,7 +6,6 @@ using Rocket.Unturned.Player;
 using SDG.Unturned;
 using SeniorS.SMarketplace.Helpers;
 using SeniorS.SMarketplace.Services;
-using System.IO;
 using System.Threading.Tasks;
 using Logger = Rocket.Core.Logging.Logger;
 

@@ -162,24 +162,27 @@ public class MarketplaceService : IDisposable
 
     private async Task SendWebhook(WebhookMessage message)
     {
-        string webhookURL = Instance.Configuration.Instance.webhookURL;
-        try
+        if (Instance.Configuration.Instance.useWebhooks)
         {
-            int result = await WebhookHelper.PostWebhookAsync(webhookURL, message);
-            if (result != 0)
+            string webhookURL = Instance.Configuration.Instance.webhookURL;
+            try
+            {
+                int result = await WebhookHelper.PostWebhookAsync(webhookURL, message);
+                if (result != 0)
+                {
+                    TaskDispatcher.QueueOnMainThread(() =>
+                    {
+                        Logger.LogWarning($"Error while sending webhook. Error code: {result}");
+                    });
+                }
+            }
+            catch (Exception ex)
             {
                 TaskDispatcher.QueueOnMainThread(() =>
                 {
-                    Logger.LogWarning($"Error while sending webhook. Error code: {result}");
+                    Logger.LogException(ex, "Webhook error");
                 });
             }
-        }
-        catch (Exception ex)
-        {
-            TaskDispatcher.QueueOnMainThread(() =>
-            {
-                Logger.LogException(ex, "Webhook error");
-            });
         }
     }
 
@@ -261,7 +264,7 @@ public class MarketplaceService : IDisposable
     {
         if (!marketplaceItems.Contains(item)) return EError.Item;
 
-        uint balance = GetPlayerBalance(buyer);
+        decimal balance = GetPlayerBalance(buyer);
 
         if (balance < item.Price)
         {
@@ -275,8 +278,15 @@ public class MarketplaceService : IDisposable
             return EError.Item;
         }
         marketplaceItems.Remove(item);
-        
-        await dbManager.AddLog(item, buyer.channel.owner.playerID.steamID.m_SteamID, buyer.channel.owner.playerID.characterName, isSellerOnline);
+
+        decimal finalPrice = item.Price;
+        if (Instance.Configuration.Instance.useTaxSystem)
+        {
+            decimal percentage = (Instance.Configuration.Instance.taxPercentage * finalPrice) / 100;
+            finalPrice -= percentage;
+        }
+
+        await dbManager.AddLog(item, finalPrice, buyer.channel.owner.playerID.steamID.m_SteamID, buyer.channel.owner.playerID.characterName, isSellerOnline);
         dbManager.Dispose();
 
         Embed embed = new();
@@ -294,13 +304,15 @@ public class MarketplaceService : IDisposable
 
         TaskDispatcher.QueueOnMainThread(() =>
         {
-            UpdatePlayerBalance(buyer, ((int)item.Price * -1));
+            // The buyer will paid full price and the seller will receive the finalPrice after taxes if enabled.
+
+            UpdatePlayerBalance(buyer, ((int)item.Price * -1)); 
             buyer.inventory.forceAddItem(item.GetItem(), true);
 
             Player sellerPlayer = PlayerTool.getPlayer(new CSteamID(item.SellerID));
             if(isSellerOnline && sellerPlayer != null)
             {
-                UpdatePlayerBalance(sellerPlayer, (int)item.Price);
+                UpdatePlayerBalance(sellerPlayer, finalPrice);
             }
         });
 
@@ -362,22 +374,29 @@ public class MarketplaceService : IDisposable
         return items.Skip(5 * page).Take(5).ToList();
     }
 
+    public int GetFiterPages(ushort itemID)
+    {
+        List<MarketplaceItem> items = FilterItems(itemID);
+
+        return items.Count();
+    }
+
     public List<KeyValuePair<ushort, string>> GetPageFilter(int page)
     {
         return distinctItems.Skip(20 * page).Take(20).ToList();
     }
 
-    private uint GetPlayerBalance(Player player)
+    private decimal GetPlayerBalance(Player player)
     {
         if (Instance.Configuration.Instance.useUconomy)
         {
-            return (uint)Uconomy.Instance.Database.GetBalance(player.channel.owner.playerID.steamID.ToString());
+            return Uconomy.Instance.Database.GetBalance(player.channel.owner.playerID.steamID.ToString());
         }
 
         return player.skills.experience;
     }
 
-    public void UpdatePlayerBalance(Player player, int amount)
+    public void UpdatePlayerBalance(Player player, decimal amount)
     {
         if (Instance.Configuration.Instance.useUconomy)
         {
@@ -386,7 +405,7 @@ public class MarketplaceService : IDisposable
             return;
         }
 
-        player.skills.ServerModifyExperience(amount);
+        player.skills.ServerModifyExperience((int)Math.Floor(amount)); // Due there's the option to use experience instead of uconomy the tax price will be floored to int to avoid issues.
     }
 
     public void Dispose()

@@ -197,14 +197,14 @@ public class MySQLManager : IDisposable
         return totalLogs;
     }
 
-    public async Task AddLog(MarketplaceItem soldItem, ulong buyerID, string buyerName, bool paid)
+    public async Task AddLog(MarketplaceItem soldItem, decimal finalPrice, ulong buyerID, string buyerName, bool paid)
     {
         string sql_insert = $"INSERT INTO `{_tablePrefix}Log` (`ItemID`, `ItemName`, `ItemPrice`, `SellerID`, `SellerName`, `BuyerID`, `BuyerName`, `Paid`) VALUES (@id, @name, @price, @sellerID, @sellerName, @buyerID, @buyerName, @paid);";
 
         MySqlCommand query_insert = new(sql_insert, _connection);
         query_insert.Parameters.AddWithValue("@id", soldItem.ItemID);
         query_insert.Parameters.AddWithValue("@name", soldItem.ItemName);
-        query_insert.Parameters.AddWithValue("@price", soldItem.Price);
+        query_insert.Parameters.AddWithValue("@price", finalPrice);
         query_insert.Parameters.AddWithValue("@sellerID", soldItem.SellerID);
         query_insert.Parameters.AddWithValue("@sellerName", soldItem.SellerName);
         query_insert.Parameters.AddWithValue("@buyerID", buyerID);
