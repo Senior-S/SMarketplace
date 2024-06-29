@@ -111,7 +111,8 @@ public class SMarketplace : RocketPlugin<Configuration>
         { "ui_totalbought_title", "Total Bought" },
         { "ui_upload_price_placeholder", "Enter price..." },
         { "ui_selllog_format", "-=b=-{0}-=/b=- bought a -=i=-{1}-=/i=- from -=b=-{2}-=/b=- for ${3}" },
-        { "error_upload_max", "Oops, you can't upload more than 28 items at a time!" },
+        { "error_upload_max", "Oops, you can't upload more than {0} items at a time!" },
+        { "error_upload_limit", "Oops, you can't post more than {0} items." },
         { "error_upload_min", "Oops, you need to atlest put 1 item on the box!" },
         { "error_upload_incomplete", "You can't change of tabs until you submit or cancel!" },
         { "error_price", "The price must be greater than 0!" },
@@ -128,7 +129,8 @@ public class SMarketplace : RocketPlugin<Configuration>
         { "success_pending_paid", "You have made ${0} while you were offline!" },
         { "webhook_purchase", "Purchased a {0} for ${1} from {2}" },
         { "webhook_list", "Put up a listing of a {0} for ${1}" },
-        { "webhook_delist", "Took down their listing of a {0} for ${1}" }
+        { "webhook_delist", "Took down their listing of a {0} for ${1}" },
+        { "error_listitem_command", "To list items use the UI through /market" }
     };
 
     protected override void Unload()

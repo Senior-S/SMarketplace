@@ -69,9 +69,21 @@ public class Market_Session : MonoBehaviour
         if (!_waitingUpload || _player.channel.owner.playerID.steamID != player.channel.owner.playerID.steamID) return;
         _waitingUpload = false;
 
-        if (items.getItemCount() > 28)
+        if(Instance.Configuration.Instance.postsLimit > 0 && (_playerListedItems.Count() + items.getItemCount()) > Instance.Configuration.Instance.postsLimit)
         {
-            Instance._msgHelper.Say(UnturnedPlayer.FromPlayer(player), "error_upload_max", true);
+            Instance._msgHelper.Say(UnturnedPlayer.FromPlayer(player), "error_upload_limit", true, Instance.Configuration.Instance.postsLimit);
+            foreach (ItemJar itemJar in items.items)
+            {
+                player.inventory.forceAddItem(itemJar.item, true);
+            }
+
+            Close();
+            return;
+        }
+
+        if (items.getItemCount() > 28 || (Instance.Configuration.Instance.postsLimit > 0 && items.getItemCount() > Instance.Configuration.Instance.postsLimit))
+        {
+            Instance._msgHelper.Say(UnturnedPlayer.FromPlayer(player), "error_upload_max", true, (items.getItemCount() > 28 ? 28 : Instance.Configuration.Instance.postsLimit));
             foreach(ItemJar itemJar in items.items)
             {
                 player.inventory.forceAddItem(itemJar.item, true);
@@ -101,14 +113,17 @@ public class Market_Session : MonoBehaviour
         ChangeTab(ETab.Upload);
         ITransportConnection connection = player.channel.owner.transportConnection;
 
-        for (byte i = 0; i < _uploadItems.Count; i++)
+        for (byte i = 0; i < 28; i++)
         {
             string uploadBoxString = $"UploadBox_{i + 1}";
 
-            EffectManager.sendUIEffectImageURL(_keyID, connection, false, $"Canvas/Background/Upload_Tab/Container/Viewport/Content/{uploadBoxString}/{uploadBoxString}_Icon", Instance.Configuration.Instance.iconsCDN.Replace("{0}", _uploadItems[i].ItemID.ToString()), true, true);
-            EffectManager.sendUIEffectText(_keyID, connection, false, $"Canvas/Background/Upload_Tab/Container/Viewport/Content/{uploadBoxString}/{uploadBoxString}_Price/Text Area/Placeholder", Instance._msgHelper.FormatMessage("ui_upload_price_placeholder"));
+            if (i < _uploadItems.Count)
+            {                
+                EffectManager.sendUIEffectImageURL(_keyID, connection, false, $"Canvas/Background/Upload_Tab/Container/Viewport/Content/{uploadBoxString}/{uploadBoxString}_Icon", Instance.Configuration.Instance.iconsCDN.Replace("{0}", _uploadItems[i].ItemID.ToString()), true, true);
+                EffectManager.sendUIEffectText(_keyID, connection, false, $"Canvas/Background/Upload_Tab/Container/Viewport/Content/{uploadBoxString}/{uploadBoxString}_Price/Text Area/Placeholder", Instance._msgHelper.FormatMessage("ui_upload_price_placeholder"));
+            }
 
-            EffectManager.sendUIEffectVisibility(_keyID, connection, false, $"Canvas/Background/Upload_Tab/Container/Viewport/Content/{uploadBoxString}", true);
+            EffectManager.sendUIEffectVisibility(_keyID, connection, false, $"Canvas/Background/Upload_Tab/Container/Viewport/Content/{uploadBoxString}", i < _uploadItems.Count);
         }
 
         EffectManager.sendUIEffectVisibility(_keyID, connection, true, "Canvas", true);
